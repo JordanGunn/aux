@@ -1,10 +1,10 @@
 # grep
 
-**Agent-assisted text search using ripgrep**
+>**Agent-assisted text search using ripgrep**
 
 ## Overview
 
-The grep skill performs deterministic, auditable text search over a codebase or file tree. It converts natural language intent into explicit ripgrep parameters and executes a portable disk scan.
+The `grep` skill performs deterministic, auditable text search over a codebase or file tree. It converts natural language intent into explicit ripgrep parameters and executes a portable disk scan.
 
 The output is evidence suitable for **surface discovery** — identifying where patterns appear before deeper analysis begins.
 
@@ -80,7 +80,7 @@ The grep skill:
 - **Targets layers** — Results can be filtered by component or file type
 - **Enables reasoning** — Structured output supports follow-up analysis
 
-## Usage
+## Agent Usage (Under the hood)
 
 ### Command Line
 
@@ -95,7 +95,7 @@ scripts/skill.sh run --root /path/to/repo --pattern "api/v[0-9]+" --mode regex -
 scripts/skill.sh run --root /path/to/repo --pattern "import" --include "*.py" --exclude "test_*"
 ```
 
-### Via Plan (stdin)
+### Plan (stdin)
 
 ```bash
 cat <<EOF | scripts/skill.sh run --stdin

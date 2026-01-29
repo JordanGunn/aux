@@ -102,7 +102,7 @@ If a task can be deterministically scripted, **the agent is not allowed to do it
 | [diff](diff/) | Deterministic git diff inspection | `git diff` |
 | [ls](ls/) | Deterministic directory state inspection | filesystem + `git status` |
 
-See [docs/](docs/) for detailed documentation on each skill.
+See [documentation](.docs/) for detailed documentation on each skill.
 
 ---
 

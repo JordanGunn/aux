@@ -310,7 +310,9 @@ def _build_rg_args(
 
     args.append("--")
     args.append(pattern)
-    args.append(str(root))
+    # Use "." as search path since we'll run rg with cwd=root
+    # This ensures globs are matched relative to root
+    args.append(".")
 
     return args
 
@@ -318,10 +320,11 @@ def _build_rg_args(
 def _run_single_search(
     pattern: str,
     argv: list[str],
+    cwd: Path | None = None,
 ) -> tuple[str, list[str], int]:
     """Run a single rg search and return (pattern, lines, return_code)."""
     try:
-        result = subprocess.run(argv, capture_output=True, text=True, check=False)
+        result = subprocess.run(argv, capture_output=True, text=True, check=False, cwd=cwd)
         lines = result.stdout.strip().split("\n") if result.stdout.strip() else []
         return pattern, lines, result.returncode
     except OSError as e:
@@ -449,6 +452,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 _run_single_search,
                 p["value"],
                 argv_map[f"{p['kind']}:{p['value']}"],
+                root,  # Run rg with cwd=root so globs match correctly
             ): p["value"]
             for p in patterns_sorted
         }
