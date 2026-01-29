@@ -279,23 +279,12 @@ Keep `scripts/src/` only if needed for validation helpers.
 
 ---
 
-### Phase 6: Update Bootstrap
+### Phase 6: Update Install
 
-The skill bootstrap should ensure the CLI is installed:
+Use the repository install scripts to ensure the CLI is installed:
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Check CLI is available
-if ! command -v aux &> /dev/null; then
-    echo "aux CLI not found. Installing..."
-    pip install aux-skills
-fi
-
-# Validate
-aux doctor
-echo "✓ Skill ready"
+./scripts/install.sh
 ```
 
 ---
@@ -354,7 +343,7 @@ Skill                           CLI
 - [ ] `06_PROCEDURE.md` references CLI invocation
 - [ ] `02_CONTRACTS.md` references schema for reasoning contract
 - [ ] Old standalone Python removed (or moved to validation helpers)
-- [ ] `bootstrap.sh` checks for CLI availability
+- [ ] `./scripts/install.sh` installs the CLI and verifies dependencies
 
 ### Global Checklist
 

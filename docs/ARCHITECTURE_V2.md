@@ -88,7 +88,7 @@ aux-v2/
 │   ├── ls/SKILL.md
 │   └── scan/SKILL.md                 # Composite: find → grep
 │
-├── bootstrap.sh                      # Single bootstrap for all skills
+├── scripts/install.sh                # Single install for aux CLI + system deps
 └── tests/
     ├── test_kernels/
     ├── test_commands/
@@ -299,24 +299,20 @@ aux grep --plan '<json>'
 See [references/EXAMPLES.md](references/EXAMPLES.md) for common patterns.
 ```
 
-## Bootstrap
+## Install
 
-Single bootstrap validates CLI and system dependencies:
+Single install validates system dependencies and installs the CLI:
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== AUx Bootstrap ==="
+echo "=== AUx Install ==="
 
 # Check Python
 python3 --version || { echo "error: python3 required"; exit 1; }
 
-# Check/install aux-skills
-if ! command -v aux &>/dev/null; then
-    echo "Installing aux-skills..."
-    pip install aux-skills
-fi
+./scripts/install.sh
 
 # Verify version
 aux --version
@@ -324,7 +320,7 @@ aux --version
 # Check system dependencies
 aux doctor  # validates rg, fd, git, diff
 
-echo "ok: aux bootstrap complete"
+echo "ok: aux install complete"
 ```
 
 ## Migration Path

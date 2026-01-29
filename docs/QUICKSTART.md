@@ -17,25 +17,23 @@ Get up and running with aux skills in minutes.
 
 ---
 
-## Bootstrap
+## Install
 
-From the repository root, run the bootstrap script to set up all skills:
+From the repository root, run the install script to set up the `aux` CLI:
 
 ```bash
 # Unix/Linux/macOS
-./scripts/bootstrap.sh
+./scripts/install.sh
 
 # Windows PowerShell
-./scripts/bootstrap.ps1
+./scripts/install.ps1
 ```
 
 This will:
 
 1. Validate that required tools are installed
-2. Run `uv sync` for each skill's Python environment
-3. Report success or failure for each skill
-
-Individual skills can also be bootstrapped independently via their own `bootstrap.sh` / `bootstrap.ps1` scripts.
+2. Install the `aux` CLI as a `uv` tool
+3. Run `aux doctor` to verify system dependencies
 
 ---
 

@@ -18,8 +18,6 @@ Each skill is self-contained and follows this layout:
 ```text
 <skill>/
   SKILL.md              # Skill manifest (name, description, metadata)
-  bootstrap.sh          # Setup script (Unix)
-  bootstrap.ps1         # Setup script (Windows)
   assets/
     schemas/            # JSON schemas for plans and receipts
   references/
@@ -35,9 +33,6 @@ Each skill is self-contained and follows this layout:
   scripts/
     skill.sh            # Main entry point (Unix)
     skill.ps1           # Main entry point (Windows)
-    src/                # Python implementation
-      pyproject.toml
-      cli.py
 ```
 
 ## Adding a New Skill
@@ -48,8 +43,7 @@ Each skill is self-contained and follows this layout:
 4. **Implement scripts** in `scripts/skill.sh` and `scripts/skill.ps1`
 5. **Define schemas** in `assets/schemas/`
 6. **Document references** following the numbered convention
-7. **Add bootstrap scripts** at the skill root
-8. **Update docs/** with a new `<SKILL>.md` file
+7. **Update docs/** with a new `<SKILL>.md` file
 
 ## Modifying Existing Skills
 
@@ -79,7 +73,7 @@ Each skill is self-contained and follows this layout:
 
 Before submitting changes:
 
-1. Run `bootstrap.sh` (or `bootstrap.ps1`) to ensure dependencies sync
+1. Run `./scripts/install.sh` (or `./scripts/install.ps1`) to install the aux CLI and verify system dependencies
 2. Run `scripts/skill.sh validate` to verify the skill is runnable
 3. Test with representative inputs
 4. Verify output matches documented schemas

@@ -2,17 +2,17 @@
 
 ---
 
-## Why do I need to run bootstrap?
+## Why do I need to run install?
 
-Skills require a Python virtual environment with their dependencies installed. The bootstrap process:
+Skills require the `aux` CLI to be installed and available on your `PATH`. The install process:
 
-1. Creates a local `.venv` in each skill's `scripts/src/` directory
-2. Installs Python dependencies via `uv sync`
-3. Validates that the skill can run
+1. Validates required system tools are installed
+2. Installs the `aux` CLI as a `uv` tool
+3. Verifies dependencies via `aux doctor`
 
-A top-level `scripts/bootstrap.sh` (or `bootstrap.ps1`) is provided for convenience to bootstrap all skills at once. You can also bootstrap individual skills via their own `bootstrap.sh` / `bootstrap.ps1` scripts.
+A top-level `scripts/install.sh` (or `scripts/install.ps1`) is provided as the single installation entry point.
 
-**Without bootstrapping, skills will fail with missing module errors.**
+**Without installing the CLI, skills will fail fast with an "aux CLI not found" error.**
 
 ---
 
@@ -27,7 +27,7 @@ This is a deliberate design choice:
 - **Portability** — System package managers vary by OS; we don't assume which one you use
 - **Security** — Automated installs of system binaries are a supply chain risk
 
-Install these prerequisites manually before bootstrapping. See [QUICKSTART.md](QUICKSTART.md) for installation instructions.
+Install these prerequisites manually before running install. See [QUICKSTART.md](QUICKSTART.md) for installation instructions.
 
 ---
 
@@ -37,7 +37,7 @@ Skills are designed to be **read-only** and **non-mutating** by default:
 
 - They never write outside their designated artifact directories (`.aux/`)
 - They never install packages, binaries, or modify system state
-- They never make network requests (except for dependency installation during bootstrap)
+- They never make network requests (except for dependency installation during install)
 
 This ensures:
 

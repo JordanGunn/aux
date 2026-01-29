@@ -11,7 +11,7 @@ pip install aux-skills
 Or for development:
 
 ```bash
-./bootstrap.sh
+../scripts/install.sh
 ```
 
 ## Usage

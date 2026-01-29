@@ -20,22 +20,7 @@ Using AUx skills (grep, find, diff, ls) for surface discovery before deep file r
 
 Run the **exact same prompt** in both sessions. The agent's behavior will differ based on available tools.
 
-## Test Prompt
 
-Use this identical prompt in both sessions:
-
-```
-I need you to analyze the authentication and authorization implementation across this codebase.
-
-Specifically:
-1. Identify all files related to authentication (OAuth2, tokens, sessions, login flows)
-2. Identify all files related to authorization (RBAC, permissions, role checks)
-3. Map which services/components handle auth vs which consume it
-4. Note any security-relevant patterns (token validation, middleware, guards)
-
-Work methodically. Show me what you find at each step before moving to the next.
-
-Root: /home/jgodau/work/dsg/geoanalytics/platform
 ```
 
 ## Metrics to Capture
@@ -48,16 +33,7 @@ Root: /home/jgodau/work/dsg/geoanalytics/platform
 | **Context relevance** | Did the agent find cross-cutting auth code, or tunnel-vision? |
 | **Time to completion** | Wall clock for equivalent coverage |
 
-## Post-Task Prompt
 
-Add this at the end of each session to get self-reported data:
-
-```
-Before we finish, can you summarize:
-1. How many files did you read or search?
-2. How many tool calls did you make?
-3. What was your strategy for finding auth-related code?
-```
 
 ## Expected Differences
 
