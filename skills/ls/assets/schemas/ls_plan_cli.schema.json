@@ -1,0 +1,65 @@
+{
+  "description": "Plan schema for ls command.",
+  "properties": {
+    "path": {
+      "description": "Directory path",
+      "title": "Path",
+      "type": "string"
+    },
+    "depth": {
+      "default": 1,
+      "description": "Recursion depth",
+      "minimum": 1,
+      "title": "Depth",
+      "type": "integer"
+    },
+    "show_hidden": {
+      "default": false,
+      "description": "Show hidden files",
+      "title": "Show Hidden",
+      "type": "boolean"
+    },
+    "show_size": {
+      "default": true,
+      "description": "Show file sizes",
+      "title": "Show Size",
+      "type": "boolean"
+    },
+    "show_time": {
+      "default": false,
+      "description": "Show modification times",
+      "title": "Show Time",
+      "type": "boolean"
+    },
+    "sort_by": {
+      "default": "name",
+      "description": "Sort order",
+      "enum": [
+        "name",
+        "size",
+        "time"
+      ],
+      "title": "Sort By",
+      "type": "string"
+    },
+    "max_entries": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Maximum entries",
+      "title": "Max Entries"
+    }
+  },
+  "required": [
+    "path"
+  ],
+  "title": "LsPlan",
+  "type": "object"
+}

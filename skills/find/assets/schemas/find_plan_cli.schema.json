@@ -1,0 +1,82 @@
+{
+  "description": "Plan schema for find command.",
+  "properties": {
+    "root": {
+      "description": "Search root directory",
+      "title": "Root",
+      "type": "string"
+    },
+    "globs": {
+      "description": "Include globs",
+      "items": {
+        "type": "string"
+      },
+      "title": "Globs",
+      "type": "array"
+    },
+    "excludes": {
+      "description": "Exclude globs",
+      "items": {
+        "type": "string"
+      },
+      "title": "Excludes",
+      "type": "array"
+    },
+    "type": {
+      "default": "file",
+      "description": "Entry type",
+      "enum": [
+        "file",
+        "directory",
+        "any"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "max_depth": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Maximum depth",
+      "title": "Max Depth"
+    },
+    "hidden": {
+      "default": false,
+      "description": "Include hidden files",
+      "title": "Hidden",
+      "type": "boolean"
+    },
+    "no_ignore": {
+      "default": false,
+      "description": "Don't respect gitignore",
+      "title": "No Ignore",
+      "type": "boolean"
+    },
+    "max_results": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Maximum results",
+      "title": "Max Results"
+    }
+  },
+  "required": [
+    "root"
+  ],
+  "title": "FindPlan",
+  "type": "object"
+}

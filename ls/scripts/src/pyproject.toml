@@ -1,9 +1,0 @@
-[project]
-name = "aux-ls"
-version = "0.1.0"
-description = "Deterministic directory state inspection CLI"
-requires-python = ">=3.10"
-dependencies = []
-
-[dependency-groups]
-dev = []
