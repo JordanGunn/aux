@@ -3,7 +3,8 @@
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$CliDir = Join-Path $ScriptDir "cli"
+$RootDir = Split-Path -Parent $ScriptDir
+$CliDir = Join-Path $RootDir "cli"
 
 Write-Output "AUx Skills Installation"
 Write-Output "======================="

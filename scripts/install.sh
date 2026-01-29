@@ -4,7 +4,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLI_DIR="$SCRIPT_DIR/cli"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+CLI_DIR="$ROOT_DIR/cli"
 
 echo "AUx Skills Installation"
 echo "======================="
