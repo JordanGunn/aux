@@ -34,6 +34,7 @@ ENV/
 *.swp
 *.swo
 *~
+.windsurf/
 
 # OS
 .DS_Store
@@ -41,3 +42,4 @@ Thumbs.db
 
 # Artifacts (kept ephemeral by default)
 *.artifact.json
+.asi/
