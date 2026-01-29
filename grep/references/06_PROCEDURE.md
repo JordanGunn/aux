@@ -19,16 +19,17 @@ index:
 ## Step 2: Choose parameters
 
 - Choose root directory (default: current workspace)
-- Choose patterns (literal terms first, regex only if needed)
-- Choose include globs (file types to search)
-- Choose exclude globs (directories/files to skip)
-- Choose match mode (`fixed` or `regex`)
+- Choose content patterns with explicit semantics per pattern:
+  - `kind=fixed` (literal)
+  - `kind=regex` (pattern)
+- Choose include globs (file types to search) — file selection only
+- Choose exclude globs (directories/files to skip) — file selection only
 - Choose case behavior (`sensitive`, `insensitive`, `smart`)
 - Set budget caps
 
 ## Step 3: Run search
 
-- Validate the plan against the schema
+- Validate the plan against the schema (`grep_plan_v2` preferred)
 - Execute via `scripts/skill.sh run`
 - Review the echoed parameter block
 

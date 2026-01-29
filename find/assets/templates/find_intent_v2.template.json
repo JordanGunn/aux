@@ -1,0 +1,11 @@
+{
+  "schema": "find_intent_v2",
+  "prompt": "",
+  "assumptions": [],
+  "hints": {
+    "roots": [],
+    "extensions": [],
+    "notes": []
+  }
+}
+

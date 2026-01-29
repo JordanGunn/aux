@@ -64,8 +64,7 @@ cmd_validate() {
 }
 
 cmd_run() {
-    cd "$SRC_DIR"
-    uv run python cli.py run "$@"
+    uv run -q --no-progress --project "$SRC_DIR" python "$SRC_DIR/cli.py" run "$@"
 }
 
 case "${1:-help}" in

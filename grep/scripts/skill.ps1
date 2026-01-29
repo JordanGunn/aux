@@ -67,12 +67,8 @@ function Test-Validate {
 
 function Invoke-Run {
     param([string[]]$Arguments)
-    Push-Location $SrcDir
-    try {
-        & uv run python cli.py run @Arguments
-    } finally {
-        Pop-Location
-    }
+    $cli = Join-Path $SrcDir "cli.py"
+    & uv run -q --no-progress --project $SrcDir python $cli run @Arguments
 }
 
 $command = if ($args.Count -gt 0) { $args[0] } else { "help" }

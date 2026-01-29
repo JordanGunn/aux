@@ -1,16 +1,26 @@
-# aux
+# AUx
 
-**Agentic Unix. Nothing more. Nothing less.**
+[![ASI Aligned](https://img.shields.io/badge/ASI-Aligned-blue)](https://github.com/JordanGunn/asi)
+
+**A**gentic **U**ni**x**
+Nothing more. Nothing less.
+
+> *If you are looking for ransom, I can tell you I don't have money.*
+> *But what I do have is a very particular set of skills,*
+> *skills I have acquired over a very long career.*
+
+---
 
 `aux` is a collection of **atomic agent skills** that wrap classic Unix read-only commands
-(`glob`, `grep`, `regex`) with a thin agentic layer.
+(`find`, `grep`, `diff`, `ls`) with a thin agentic layer.
 
 The tools already exist.  
 The power comes from letting agents do what they're good at—**parameter selection**—while
 keeping execution **fully deterministic, inspectable, and replayable**.
 
-> "I have a very particular set of skills…"  
-> And they're mostly `rg`, `fd`, and friends — but now they take intent.
+> **Note**: All skills in this repository are designed in accordance with
+> [ASI (Agentic Skill Interface)](https://github.com/JordanGunn/asi) —
+> a governance framework for deterministic, auditable agent skills.
 
 ---
 
@@ -29,7 +39,7 @@ Humans are bad at:
 - writing correct regexes under time pressure
 - scaling these operations across large trees
 
-Agents are *excellent* at those things—but unreliable if given too much authority.
+Agents are *excellent* at those things, but unreliable if given too much authority.
 
 `aux` bridges that gap.
 
@@ -39,9 +49,9 @@ Agents are *excellent* at those things—but unreliable if given too much author
 
 - A **facade layer** over existing Unix commands
 - Each skill maps 1:1 to a familiar verb:
-  - `/glob` → file enumeration
-  - `/grep` → text search
-  - `/regex` → structured pattern matching
+  - `/find` → `fd` → file enumeration
+  - `/grep` → `rg` → text search
+- Regex is expressed explicitly as pattern semantics inside `/find` and `/grep` plans
 - Natural language is used **only** to express intent
 - Agents generate **parameters**, not actions
 - Scripts perform **all execution**
@@ -83,6 +93,19 @@ If a task can be deterministically scripted, **the agent is not allowed to do it
 
 ---
 
+## Skills
+
+| Skill | Description | Wraps |
+| ----- | ----------- | ----- |
+| [grep](grep/) | Agent-assisted text search | `rg` (ripgrep) |
+| [find](find/) | Agent-assisted file enumeration | `fd` / `fdfind` |
+| [diff](diff/) | Deterministic git diff inspection | `git diff` |
+| [ls](ls/) | Deterministic directory state inspection | filesystem + `git status` |
+
+See [docs/](docs/) for detailed documentation on each skill.
+
+---
+
 ## Skill model
 
 Each skill is **fully independent** and self-contained:
@@ -90,8 +113,12 @@ Each skill is **fully independent** and self-contained:
 ```text
 aux/
   grep/
-  glob/
-  regex/
+  find/
+  diff/
+  ls/
+  docs/           # Skill documentation
+  CONTRIBUTING.md # Contribution guidelines
+  CHANGELOG.md    # Version history
 ```
 
 Each skill owns:

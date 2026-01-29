@@ -1,0 +1,12 @@
+{
+  "surface": "git",
+  "root": "",
+  "scope": {
+    "mode": "working_tree",
+    "paths": []
+  },
+  "bounds": {
+    "max_files": 100
+  },
+  "intent_ref": ""
+}

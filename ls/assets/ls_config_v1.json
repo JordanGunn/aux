@@ -1,0 +1,25 @@
+{
+  "schema": "ls_config_v1",
+  "defaults": {
+    "root": ".",
+    "depth": 2,
+    "include_hidden": false,
+    "sort": "mtime",
+    "order": "desc",
+    "top_n": 200,
+    "git_status": "auto"
+  },
+  "caps": {
+    "max_depth": 32,
+    "max_entries_scanned": 20000,
+    "max_top_n": 1000,
+    "max_view_bytes": 65536,
+    "max_assumptions": 8
+  },
+  "policy": {
+    "follow_symlinks": false,
+    "gitignore": {
+      "mode": "git_only"
+    }
+  }
+}

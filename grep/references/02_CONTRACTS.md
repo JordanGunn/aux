@@ -13,22 +13,30 @@ index:
 
 `/grep <prompt>` is treated as intent. The agent MUST compile it into two ephemeral JSON receipts:
 
-1. `grep_intent_v1` (what the user wants)
-2. `grep_plan_v1` (explicit CLI args to run)
+1. `grep_intent_v*` (what the user wants)
+2. `grep_plan_v*` (explicit CLI args to run)
 
 Schemas:
 
-- `assets/schemas/grep_intent_v1.schema.json`
-- `assets/schemas/grep_plan_v1.schema.json`
+- v1:
+  - `assets/schemas/grep_intent_v1.schema.json`
+  - `assets/schemas/grep_plan_v1.schema.json`
+- v2 (preferred; explicit pattern semantics + file-filter globs):
+  - `assets/schemas/grep_intent_v2.schema.json`
+  - `assets/schemas/grep_plan_v2.schema.json`
 
 The compiled plan MUST map 1:1 to CLI flags (no implicit scope).
 
 Templates/examples:
 
-- `assets/templates/grep_intent_v1.template.json`
-- `assets/templates/grep_plan_v1.template.json`
+- v1:
+  - `assets/templates/grep_intent_v1.template.json`
+  - `assets/templates/grep_plan_v1.template.json`
+- v2:
+  - `assets/templates/grep_intent_v2.template.json`
+  - `assets/templates/grep_plan_v2.template.json`
 
-Run `scripts/skill.sh run --stdin` to validate the compiled receipt and execute the search.
+Pipe the compiled plan JSON into the runner: `cat plan.json | bash scripts/skill.sh run --stdin`.
 
 ## Determinism
 

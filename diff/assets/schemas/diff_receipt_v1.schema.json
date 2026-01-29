@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "diff_receipt_v1.schema.json",
+  "title": "Diff Receipt",
+  "description": "Execution receipt: environment detection, bounds, truncation flags, errors",
+  "type": "object",
+  "required": ["status", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success", "error", "truncated", "clean"],
+      "description": "Execution outcome"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When execution completed"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "git_detected": { "type": "boolean" },
+        "git_root": { "type": "string" },
+        "git_version": { "type": "string" }
+      },
+      "description": "Environment detection results"
+    },
+    "plan_ref": {
+      "type": "string",
+      "description": "Reference to the plan that was executed"
+    },
+    "bounds_applied": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_files": { "type": "integer" },
+        "max_lines": { "type": "integer" },
+        "max_bytes": { "type": "integer" }
+      },
+      "description": "Bounds that were applied during execution"
+    },
+    "truncation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "truncated": { "type": "boolean" },
+        "reason": { "type": "string" },
+        "files_processed": { "type": "integer" },
+        "files_skipped": { "type": "integer" }
+      },
+      "description": "Truncation details if output was truncated"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if status is error"
+    },
+    "artifacts_emitted": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of artifacts produced"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional execution notes"
+    }
+  }
+}

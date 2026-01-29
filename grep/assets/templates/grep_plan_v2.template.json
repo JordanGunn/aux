@@ -1,0 +1,39 @@
+{
+  "schema": "grep_plan_v2",
+  "intent": {
+    "schema": "grep_intent_v2",
+    "prompt": "",
+    "assumptions": [],
+    "hints": {}
+  },
+  "intent_hash": "sha256:",
+  "search": {
+    "root": ".",
+    "content_patterns": [
+      { "kind": "fixed", "value": "TODO" }
+    ],
+    "file_filters": {
+      "include_globs": [],
+      "exclude_globs": []
+    },
+    "case": "smart",
+    "context": 0,
+    "format": "auto",
+    "max_lines": 500,
+    "max_files": null,
+    "max_matches": null,
+    "parallelism": 4,
+    "policy": {
+      "hidden": false,
+      "follow": false,
+      "no_ignore": false
+    },
+    "limits": {
+      "max_pattern_length": 512
+    }
+  },
+  "notes": {
+    "strategy": "",
+    "scope": ""
+  }
+}

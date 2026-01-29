@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ls_intent_v1.schema.json",
+  "title": "ls_intent_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "prompt"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "ls_intent_v1"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "User-provided intent from `/ls <prompt>` invocation."
+    },
+    "assumptions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Agent assumptions that influenced parameter selection (must be explicit)."
+    },
+    "hints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "roots": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Candidate root directories suggested by user or agent."
+        },
+        "notes": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Non-executing notes that do not affect the plan."
+        }
+      }
+    }
+  }
+}
