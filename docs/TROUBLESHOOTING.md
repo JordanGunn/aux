@@ -18,16 +18,13 @@ or
 error: .venv not found
 ```
 
-**Cause:** The skill's Python virtual environment has not been created.
+**Cause:** The `aux` CLI is not installed or not on your `PATH`.
 
-**Solution:** Run the bootstrap script:
+**Solution:** Run the install script:
 
 ```bash
-# Bootstrap all skills
-./scripts/bootstrap.sh
-
-# Or bootstrap a specific skill
-./grep/bootstrap.sh
+# Install the aux CLI and verify dependencies
+./scripts/install.sh
 ```
 
 ---
@@ -54,7 +51,7 @@ error: fd not found. Install fd-find (binary may be 'fdfind' on Debian/Ubuntu).
 - **fd** (`fd` or `fdfind`): Required for find skill
 - **git**: Required for diff and ls git-status features
 - **python** (3.10+): Required for all skills
-- **uv**: Required for bootstrapping
+- **uv**: Required for installation
 
 ---
 
@@ -92,14 +89,14 @@ ValueError: Unable to determine which files to ship inside the wheel
 
 **Cause:** The skill's `pyproject.toml` is missing hatch build configuration.
 
-**Solution:** Add the following to the skill's `scripts/src/pyproject.toml`:
+**Solution:** This error typically indicates a packaging misconfiguration during local development. Re-run the installer after correcting the packaging configuration.
 
 ```toml
 [tool.hatch.build.targets.wheel]
 packages = ["."]
 ```
 
-Then re-run bootstrap.
+Then re-run install.
 
 ---
 
@@ -145,7 +142,7 @@ Then re-run bootstrap.
 **Symptom:**
 
 ```
-bash: ./scripts/bootstrap.sh: Permission denied
+bash: ./scripts/install.sh: Permission denied
 ```
 
 **Cause:** The script doesn't have execute permissions.
@@ -153,9 +150,9 @@ bash: ./scripts/bootstrap.sh: Permission denied
 **Solution:**
 
 ```bash
-chmod +x ./scripts/bootstrap.sh
+chmod +x ./scripts/install.sh
 # Or run via bash directly
-bash ./scripts/bootstrap.sh
+bash ./scripts/install.sh
 ```
 
 ---
@@ -177,7 +174,7 @@ File cannot be loaded because running scripts is disabled on this system.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # Or run with bypass
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
 ---

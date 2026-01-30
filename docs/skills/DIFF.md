@@ -1,10 +1,10 @@
 # diff
 
-**Deterministic git diff inspection**
+> **Deterministic git diff inspection**
 
 ## Overview
 
-The diff skill performs deterministic, bounded git diff inspection. It converts natural language intent into an explicit diff plan and emits a reproducible summary with optional patch artifacts.
+The `diff` skill performs deterministic, bounded git diff inspection. It converts natural language intent into an explicit diff plan and emits a reproducible summary with optional patch artifacts.
 
 The output is structured change information suitable for **change review** — understanding what has been modified before making decisions.
 

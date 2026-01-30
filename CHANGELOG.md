@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **find** — Agent-assisted file enumeration using fd
 - **diff** — Deterministic git diff inspection
 - **ls** — Deterministic directory state inspection
-- Bootstrap scripts (`bootstrap.sh`, `bootstrap.ps1`) for each skill
+- Unified installation via `scripts/install.sh` and `scripts/install.ps1`
 - JSON schemas for plans and receipts
 - Reference documentation for agent navigation
 

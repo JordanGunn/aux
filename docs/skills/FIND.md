@@ -1,10 +1,10 @@
 # find
 
-**Agent-assisted file enumeration using fd**
+>**Agent-assisted file enumeration using fd**
 
 ## Overview
 
-The find skill performs deterministic, auditable file enumeration over a directory tree. It converts natural language intent into explicit fd parameters and executes a portable disk scan.
+The `find` skill performs deterministic, auditable file enumeration over a directory tree. It converts natural language intent into explicit fd parameters and executes a portable disk scan.
 
 The output is a list of file paths suitable for **surface discovery** — understanding what exists before reading contents.
 
@@ -115,7 +115,7 @@ The find skill:
 - **Enables architectural reasoning** — Understand how features are distributed
 - **Produces audit trails** — Each search has a stable query_id for reproducibility
 
-## Usage
+## Agent Usage (Under the hood)
 
 ### Command Line
 

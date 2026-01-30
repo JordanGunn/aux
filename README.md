@@ -95,12 +95,12 @@ If a task can be deterministically scripted, **the agent is not allowed to do it
 
 ## Skills
 
-| Skill | Description | Wraps |
-| ----- | ----------- | ----- |
-| [grep](grep/) | Agent-assisted text search | `rg` (ripgrep) |
-| [find](find/) | Agent-assisted file enumeration | `fd` / `fdfind` |
-| [diff](diff/) | Deterministic git diff inspection | `git diff` |
-| [ls](ls/) | Deterministic directory state inspection | filesystem + `git status` |
+| Skill | Description | Wraps | Path |
+| ----- | ----------- | ----- | ---- |
+| [grep](skills/grep/) | Agent-assisted text search | `rg` (ripgrep) | `skills/grep/SKILL.md` |
+| [find](skills/find/) | Agent-assisted file enumeration | `fd` / `fdfind` | `skills/find/SKILL.md` |
+| [diff](skills/diff/) | Deterministic git diff inspection | `git diff` | `skills/diff/SKILL.md` |
+| [ls](skills/ls/) | Deterministic directory state inspection | filesystem + `git status` | `skills/ls/SKILL.md` |
 
 See [docs/](docs/) for detailed documentation on each skill.
 
@@ -112,13 +112,14 @@ Each skill is **fully independent** and self-contained:
 
 ```text
 aux/
-  grep/
-  find/
-  diff/
-  ls/
-  docs/           # Skill documentation
-  CONTRIBUTING.md # Contribution guidelines
-  CHANGELOG.md    # Version history
+  skills/         # All skills live here
+    grep/
+    find/
+    diff/
+    ls/
+  cli/            # Unified execution backend
+  docs/           # Documentation
+  scripts/        # Installation scripts
 ```
 
 Each skill owns:

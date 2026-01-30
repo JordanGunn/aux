@@ -1,10 +1,10 @@
 # ls
 
-**Deterministic directory state inspection**
+>**Deterministic directory state inspection**
 
 ## Overview
 
-The ls skill performs deterministic, bounded directory state inspection. It converts natural language intent into an explicit plan and executes a reproducible inventory with optional ranking and git status mapping.
+The `ls` skill performs deterministic, bounded directory state inspection. It converts natural language intent into an explicit plan and executes a reproducible inventory with optional ranking and git status mapping.
 
 The output is structured metadata suitable for **directory comprehension** — understanding what exists, how big it is, and when it changed.
 
@@ -201,7 +201,7 @@ Git status indicators:
 - `!!` — Ignored
 - (blank) — Unchanged
 
-## Usage
+## Agent Usage (Under the hood)
 
 ### Command Line
 
