@@ -11,17 +11,9 @@ index:
 
 ## Contract
 
-`/ls <prompt>` is treated as intent. The agent MUST compile it into ephemeral JSON receipts:
+`/ls <prompt>` is treated as intent. The agent compiles it into a plan matching the CLI schema.
 
-1. `ls_intent_v1` (what the user wants)
-2. `ls_plan_v1` (explicit, bounded execution plan)
-
-Schemas:
-
-- `assets/schemas/ls_intent_v1.schema.json`
-- `assets/schemas/ls_plan_v1.schema.json`
-- `assets/schemas/ls_result_bundle_v1.schema.json`
-- `assets/schemas/ls_config_v1.schema.json`
+**Source of truth:** Run `aux ls --schema` (or `bash scripts/skill.sh schema`) to get the current plan schema.
 
 The compiled plan MUST be explicit about:
 

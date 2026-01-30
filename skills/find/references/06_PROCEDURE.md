@@ -29,29 +29,43 @@ index:
 
 ## Step 3: Run enumeration
 
-- Validate the plan against the schema (`find_plan_v2` preferred)
-- Execute via `scripts/skill.sh run`
-- Review the echoed parameter block
+- Get the current schema: `bash scripts/skill.sh schema`
+- Execute via `scripts/skill.sh run` (CLI passthrough or `--stdin` for JSON plan)
+- Review the output summary
 
 ## Step 4: Present results
 
-- Show the parameter block for reproducibility
 - Present file paths sorted alphabetically
 - Report counts and type distributions
 - Suggest refinements if results are too broad or empty
 
 ## CLI
 
-From `aux/find/`, run:
+**Get the schema first** (source of truth for plan structure):
 
 ```bash
-bash scripts/skill.sh run --root . --pattern "*.py" --type file
+bash scripts/skill.sh schema
+# or directly: aux find --schema
 ```
 
-Or on Windows:
+**Simple mode** (options as flags):
 
-```powershell
-pwsh scripts/skill.ps1 run --root . --pattern "*.py" --type file
+```bash
+aux find --root /path --glob "*.py" --type file
+```
+
+**Plan mode** (JSON via stdin):
+
+```bash
+cat <<'JSON' | bash scripts/skill.sh run --stdin
+{
+  "root": "/path/to/search",
+  "globs": ["*.py", "*.go"],
+  "excludes": ["**/vendor/**"],
+  "type": "file",
+  "max_results": 200
+}
+JSON
 ```
 
 ### Validate
@@ -62,50 +76,35 @@ Before first use, verify dependencies:
 bash scripts/skill.sh validate
 ```
 
-## Output Formats
+## Output Format
 
-The `--format` flag controls output shape. All formats emit a `param_block` first.
-
-### `auto` (default)
-
-Selects `human` for interactive use, `jsonl` when piped.
-
-### `human`
-
-Plain text summary followed by file paths:
-
-```text
-total: 50
-files: 42
-directories: 8
-
-src/main.py
-src/utils/helpers.py
-tests/test_main.py
-```
-
-### `jsonl`
-
-Newline-delimited JSON for programmatic consumption:
+Output is JSON with structure:
 
 ```json
-{"kind":"param_block","param_block":{...}}
-{"kind":"summary","total":50,"files":42,"directories":8,"truncated":false}
-{"kind":"entry","path":"src/main.py","type":"file"}
+{
+  "summary": {"total": 50, "files": 42, "directories": 8},
+  "results": [
+    {"path": "src/main.py", "type": "file"}
+  ]
+}
 ```
 
 ## Budget Flags
 
 Control output size deterministically:
 
-- `--max-results N` — Cap total results (default: 1000)
+- `--max-results N` — Cap total results
 - `--max-depth N` — Limit directory depth
 
-Caps are applied **after sorting**, so truncated output remains stable.
+## Options Reference
 
-## Reproducibility
+Run `aux find --help` for the complete, authoritative option list:
 
-Every invocation emits:
-
-- `param_block` — Full parameter set including `argv`
-- `query_id` — SHA256 hash of normalized parameters
+- `--root <path>` — Root directory (required)
+- `--glob <pattern>` — Include glob (repeatable)
+- `--exclude <pattern>` — Exclude glob (repeatable)
+- `--type <file|directory|any>` — Entry type filter
+- `--max-depth <n>` — Maximum search depth
+- `--max-results <n>` — Maximum results to return
+- `--hidden` — Include hidden files
+- `--no-ignore` — Don't respect gitignore

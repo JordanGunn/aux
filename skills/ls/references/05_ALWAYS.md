@@ -9,7 +9,7 @@ index:
 The agent MUST:
 
 - Compile intent into a schema-valid plan before execution
-- Validate assets/config fail-closed before running (via `scripts/skill.sh validate`)
+- Validate dependencies before running (via `scripts/skill.sh validate`)
 - Declare explicit root, depth, include_hidden, ranking, and caps
 - Use stable sorting for all lists and outputs
 - Report empty results with full scope context

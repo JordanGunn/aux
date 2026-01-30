@@ -11,20 +11,21 @@ index:
 
 ## Contract
 
-`/diff <prompt>` is treated as intent. The agent MUST compile it into ephemeral JSON artifacts:
+`/diff <prompt>` is treated as intent. The agent compiles it into a plan matching the CLI schema.
 
-1. `diff_intent_v1` (what the user wants)
-2. `diff_discovery_plan_v1` (explicit, bounded discovery-only plan)
-3. `diff_plan_v1` (explicit, bounded execution plan)
+**Source of truth:** Run `aux diff --schema` (or `bash scripts/skill.sh schema`) to get the current plan schema.
 
-Schemas:
+**Simple mode:** Pass paths as positional arguments:
 
-- `assets/schemas/diff_intent_v1.schema.json`
-- `assets/schemas/diff_discovery_plan_v1.schema.json`
-- `assets/schemas/diff_plan_v1.schema.json`
-- `assets/schemas/diff_summary_v1.schema.json`
-- `assets/schemas/diff_receipt_v1.schema.json`
-- `assets/schemas/diff_result_bundle_v1.schema.json`
+```bash
+aux diff /path/a /path/b --context 3
+```
+
+**Plan mode:** Pipe JSON matching the schema to stdin:
+
+```bash
+cat plan.json | bash scripts/skill.sh run --stdin
+```
 
 Discovery outputs (under `.aux/diff/`):
 

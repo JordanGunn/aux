@@ -30,7 +30,7 @@ index:
 ## Step 3: Run inventory
 
 - Validate the plan against the schema (`ls_plan_v1`)
-- Validate assets/config fail-closed (`scripts/skill.sh validate` runs `validate.py` and `cli.py validate`)
+- Validate dependencies (`scripts/skill.sh validate` delegates to `aux doctor`)
 - Load and validate config (`ls_config_v1`)
 - Execute via `scripts/skill.sh run`
 - Emit artifacts under `.aux/ls`:

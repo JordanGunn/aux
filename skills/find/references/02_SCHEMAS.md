@@ -1,51 +1,44 @@
 ---
-description: Schema contract and pattern semantics (v1 vs v2).
+description: Schema contract and pattern semantics.
 index:
   - Overview
-  - Pattern Objects (v2)
+  - Getting the Schema
+  - Plan Fields
   - Deterministic Mapping
-  - Parity Checklist
 ---
 
 # Schemas
 
 ## Overview
 
-This skill supports two plan schemas:
+The plan schema is defined by the `aux` CLI. Always fetch the current schema before building a plan.
 
-- `find_plan_v1` — legacy string patterns (treated as glob name patterns)
-- `find_plan_v2` — explicit per-pattern semantics via pattern objects
+## Getting the Schema
 
-`find_plan_v2` is the preferred schema going forward. It makes regex usage explicit and auditable.
+```bash
+aux find --schema
+# or: bash scripts/skill.sh schema
+```
 
-## Pattern Objects (v2)
+This returns the JSON Schema that `--plan` input must validate against.
 
-`find_plan_v2.find.include_patterns[]` and `find_plan_v2.find.exclude_patterns[]` use the same shape:
+## Plan Fields
 
-- `kind` (required): `glob | regex`
-- `value` (required): non-empty string
+Key fields in the plan:
 
-There are **no implicit defaults** in v2. If a pattern is present, `kind` MUST be present.
+- `root` (required): Search root directory
+- `globs[]`: Include files matching glob
+- `excludes[]`: Exclude files matching glob
+- `type`: Entry type filter (`file`, `directory`, `any`)
+- `max_depth`: Maximum search depth
+- `max_results`: Maximum results to return
 
 ## Deterministic Mapping
 
 fd semantics:
 
-- fd default pattern mode is **regex**
-- `--glob` switches to **glob**
+- `--glob` patterns for file name matching
+- `--exclude` patterns for exclusions
 
-Mapping rules:
-
-- include `kind=glob` → `fd --glob <value> <root>`
-- include `kind=regex` → `fd <value> <root>`
-- exclude `kind=glob` → may be passed as `--exclude <value>` to reduce surface
-- exclude `kind=regex` → applied deterministically as a post-filter to results
-
-## Parity Checklist
-
-When updating schemas, keep these aligned with `grep`:
-
-- Pattern objects must always declare `kind`
-- Max pattern length limits must be enforced or fail closed
-- Globs must remain in the file-selection domain (not content matching)
+**Key rule:** globs apply to file name selection only.
 
