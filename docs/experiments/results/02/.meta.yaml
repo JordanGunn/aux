@@ -1,5 +1,7 @@
 metadata:
   date: 2026-01-29
+  experiment: "02"
+  description: Post-architecture cleanup rerun with improved skill docs (metrics exclude run_command used to invoke /grep)
   agent: cascade
   vendor: windsurf
   mcp:
@@ -11,10 +13,8 @@ metadata:
     model: gpt-5.2
     reasoning: medium
   artifacts:
-    - path: A.md
-      description: Session A (no skills)
-    - path: B.md
-      description: Session B (with skills)
+    - path: RESULTS.md
+      description: Session B (with skills + doc fixes)
     - path: COMPARISON.md
       description: Table comparison of A vs B
     - path: CONCLUSION.md
@@ -24,3 +24,5 @@ metadata:
       description: Original task prompt.
     - path: ../../prompt/02_AFTER.md
       description: Post-task analysis prompt.
+    - path: ../../baseline/gpt-5.2.md
+      description: Baseline task results (comparison metrics)
