@@ -50,7 +50,7 @@ Thumbs.db
 .codex/
 .claude/
 .github/
-
+AGENTS.md
 
 # Misc
 docs/.experiments/
