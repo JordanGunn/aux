@@ -1,13 +1,21 @@
-# AUx
+# AUx: Agentic Unix
 
 [![ASI Aligned](https://img.shields.io/badge/ASI-Aligned-blue)](https://github.com/JordanGunn/asi)
-
-**A**gentic **U**ni**x**
-Nothing more. Nothing less.
 
 > *If you are looking for ransom, I can tell you I don't have money.*
 > *But what I do have is a very particular set of skills,*
 > *skills I have acquired over a very long career.*
+
+---
+
+## Don't want to read this?
+
+**Use your Agent!**
+
+The repository provides an `llms.txt` file ([see spec](https://llmstxt.org/)) for agent fetching.
+
+If you don't want to read the docs, ask your agent to do it for you:
+> Please fetch and summarize the AUx skills repository and summarize the contents from [llms.txt](https://raw.githubusercontent.com/JordanGunn/aux/refs/heads/master/llms.txt).
 
 ---
 
@@ -60,12 +68,14 @@ Agents are *excellent* at those things, but unreliable if given too much authori
 
 ## What aux is not
 
-- Not a monolithic "search tool"
-- Not a prompt framework
-- Not RAG
-- Not embeddings
-- Not magic
-- Not mutation (by default)
+By design, AUx skill are not:
+
+- A monolithic "search tool"
+- A prompt framework
+- RAG
+- Embeddings
+- Magic
+- Mutation (by default)
 
 If a task can be deterministically scripted, **the agent is not allowed to do it**.
 
@@ -133,31 +143,16 @@ They share **conventions**, not shared code.
 
 ---
 
-## Mental model
-
-Think of `aux` like an **auxiliary cable** (RIP):
-
-- old
-- universal
-- boring
-- reliable
-- does exactly one thing well
-
-You already know when you want to `grep`.
-Now you don't have to guess *how*.
-
----
-
 ## Results
 
 In controlled experiments comparing agent performance with and without `aux` skills:
 
-| Metric | Without Skills | With Skills | Improvement |
-|--------|----------------|-------------|-------------|
-| **Context consumed** | 47% (182k tokens) | 25% (98k tokens) | **-47% tokens** |
-| **Files read** | 35 | 28 | -20% |
-| **Search operations** | ~200-300 file scans | 6 targeted passes | -98% |
-| **Output quality** | Excellent | Excellent | Same |
+| Metric                | Without Skills      | With Skills       | Improvement     |
+| ----------------------|---------------------|-------------------|-----------------|
+| **Context consumed**  | 47% (182k tokens)   | 25% (98k tokens)  | **-47% tokens** |
+| **Files read**        | 35                  | 28                | -20%            |
+| **Search operations** | ~200-300 file scans | 6 targeted passes | -98%            |
+| **Output quality**    | Excellent           | Excellent         | Same            |
 
 **Key finding:** Skills reduce token consumption by nearly half while maintaining output quality. The "search-before-read" discipline prevents agents from over-reading files they don't need.
 

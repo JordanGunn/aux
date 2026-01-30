@@ -1,0 +1,14 @@
+# AUx (Agentic Unix)
+
+> AUx is a collection of **atomic agent skills** that super-charge classic Unix commands with reason-based paramter injection and concurrency.
+
+---
+
+## Agent Instructions
+
+Use the links below as the recommended progressive disclosure entrypoints.
+
+## Documentation Index
+
+- [README](https://raw.githubusercontent.com/JordanGunn/aux/refs/heads/master/README.md): Overview, execution model, and quick start.
+- [Documentation Index](https://raw.githubusercontent.com/JordanGunn/aux/refs/heads/master/docs/.INDEX.md): Comprehensive documentation index.
