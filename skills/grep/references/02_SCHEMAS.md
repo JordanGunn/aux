@@ -1,51 +1,45 @@
 ---
-description: Schema contract and pattern semantics (v1 vs v2).
+description: Schema contract and pattern semantics.
 index:
   - Overview
-  - Pattern Objects (v2)
+  - Getting the Schema
+  - Pattern Objects
   - Deterministic Mapping
-  - Parity Checklist
 ---
 
 # Schemas
 
 ## Overview
 
-This skill supports two plan schemas:
+The plan schema is defined by the `aux` CLI. Always fetch the current schema before building a plan.
 
-- `grep_plan_v1` — legacy string patterns + a global `mode` (`fixed | regex`)
-- `grep_plan_v2` — explicit per-pattern semantics via content pattern objects, and globs restricted to file selection
+## Getting the Schema
 
-`grep_plan_v2` is the preferred schema going forward.
+```bash
+aux grep --schema
+# or: bash scripts/skill.sh schema
+```
 
-## Pattern Objects (v2)
+This returns the JSON Schema that `--plan` input must validate against.
 
-Content patterns (`grep_plan_v2.search.content_patterns[]`):
+## Pattern Objects
 
-- `kind` (required): `fixed | regex`
+Content patterns (`patterns[]`):
+
+- `kind`: `fixed` (literal) or `regex` (default)
 - `value` (required): non-empty string
 
-File filters (`grep_plan_v2.search.file_filters`):
+File filters:
 
-- `include_globs[]` — passed as `rg --glob <glob>`
-- `exclude_globs[]` — passed as `rg --glob !<glob>`
-
-There are **no implicit defaults** in v2. If a pattern is present, `kind` MUST be present.
+- `globs[]` — include files matching glob
+- `excludes[]` — exclude files matching glob
 
 ## Deterministic Mapping
 
 Mapping rules:
 
-- content `kind=fixed` → `rg --fixed-strings <value>`
-- content `kind=regex` → `rg <value>` (default rg mode)
+- `kind=fixed` → `rg --fixed-strings <value>`
+- `kind=regex` → `rg <value>` (default rg mode)
+- `--fixed` flag in simple mode sets all patterns to `kind=fixed`
 
-**Key rule:** globs never apply to content matching. They are only used for file selection.
-
-## Parity Checklist
-
-When updating schemas, keep these aligned with `find`:
-
-- Pattern objects must always declare `kind`
-- Max pattern length limits must be enforced or fail closed
-- Globs must remain in the file-selection domain (not content matching)
-
+**Key rule:** globs apply to file selection only, not content matching.

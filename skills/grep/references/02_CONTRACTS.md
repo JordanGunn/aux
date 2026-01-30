@@ -11,39 +11,28 @@ index:
 
 ## Contract
 
-`/grep <prompt>` is treated as intent. The agent MUST compile it into two ephemeral JSON receipts:
+`/grep <prompt>` is treated as intent. The agent compiles it into a plan matching the CLI schema.
 
-1. `grep_intent_v*` (what the user wants)
-2. `grep_plan_v*` (explicit CLI args to run)
-
-Schemas:
-
-- v1:
-  - `assets/schemas/grep_intent_v1.schema.json`
-  - `assets/schemas/grep_plan_v1.schema.json`
-- v2 (preferred; explicit pattern semantics + file-filter globs):
-  - `assets/schemas/grep_intent_v2.schema.json`
-  - `assets/schemas/grep_plan_v2.schema.json`
+**Source of truth:** Run `aux grep --schema` (or `bash scripts/skill.sh schema`) to get the current plan schema.
 
 The compiled plan MUST map 1:1 to CLI flags (no implicit scope).
 
-Templates/examples:
+**Simple mode:** Pass pattern as positional argument with flags:
 
-- v1:
-  - `assets/templates/grep_intent_v1.template.json`
-  - `assets/templates/grep_plan_v1.template.json`
-- v2:
-  - `assets/templates/grep_intent_v2.template.json`
-  - `assets/templates/grep_plan_v2.template.json`
+```bash
+aux grep "pattern" --root /path --glob "*.py"
+```
 
-Pipe the compiled plan JSON into the runner: `cat plan.json | bash scripts/skill.sh run --stdin`.
+**Plan mode:** Pipe JSON matching the schema to stdin:
+
+```bash
+cat plan.json | bash scripts/skill.sh run --stdin
+```
 
 ## Determinism
 
-- Normalize intent JSON with stable key ordering, no whitespace, and UTF-8.
-- Compute `intent_hash = "sha256:" + sha256(normalized_intent_json)`.
 - Keep all lists stable-sorted where order is not semantically meaningful (globs, excludes).
-- Never emit timestamps or nondeterministic IDs in receipts.
+- Use consistent parameter ordering for reproducibility.
 
 ## Guardrails
 

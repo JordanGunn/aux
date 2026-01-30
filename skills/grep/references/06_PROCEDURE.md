@@ -29,9 +29,9 @@ index:
 
 ## Step 3: Run search
 
-- Validate the plan against the schema (`grep_plan_v2` preferred)
-- Execute via `scripts/skill.sh run`
-- Review the echoed parameter block
+- Get the current schema: `bash scripts/skill.sh schema`
+- Execute via `scripts/skill.sh run` (CLI passthrough or `--stdin` for JSON plan)
+- Review the output summary
 
 ## Step 4: Present results
 
@@ -42,16 +42,32 @@ index:
 
 ## CLI
 
-From `aux/grep/`, run:
+**Get the schema first** (source of truth for plan structure):
 
 ```bash
-bash scripts/skill.sh run --root . --pattern "term" --mode fixed --case smart
+bash scripts/skill.sh schema
+# or directly: aux grep --schema
 ```
 
-Or on Windows:
+**Simple mode** (pattern as positional argument):
 
-```powershell
-pwsh scripts/skill.ps1 run --root . --pattern "term" --mode fixed --case smart
+```bash
+aux grep "pattern" --root /path --glob "*.py" --case smart
+```
+
+**Plan mode** (JSON via stdin):
+
+```bash
+cat <<'JSON' | bash scripts/skill.sh run --stdin
+{
+  "root": "/path/to/search",
+  "patterns": [{"kind": "fixed", "value": "term"}],
+  "globs": ["*.py", "*.go"],
+  "excludes": ["**/vendor/**"],
+  "case": "smart",
+  "max_matches": 200
+}
+JSON
 ```
 
 ### Validate
@@ -62,47 +78,36 @@ Before first use, verify dependencies:
 bash scripts/skill.sh validate
 ```
 
-## Output Formats
+## Output Format
 
-The `--format` flag controls output shape. All formats emit a `param_block` first.
-
-### `auto` (default)
-
-Selects `human` for interactive use, `jsonl` when piped.
-
-### `human`
-
-Plain text summary followed by match lines:
-
-```text
-files: 12
-matches: 47
-path/to/file.py:10:matched line content
-```
-
-### `jsonl`
-
-Newline-delimited JSON for programmatic consumption:
+Output is JSON with structure:
 
 ```json
-{"kind":"param_block","param_block":{...}}
-{"kind":"summary","files":12,"matches":47,"truncated":false}
-{"kind":"match","path":"path/to/file.py","line":10,"content":"matched line content"}
+{
+  "summary": {"files": 12, "matches": 47, "patterns": 1},
+  "results": [
+    {"file": "./path/file.py", "line": 10, "content": "matched line", "pattern": "term"}
+  ]
+}
 ```
 
 ## Budget Flags
 
 Control output size deterministically:
 
-- `--max-lines N` — Cap total output lines (default: 500)
-- `--max-files N` — Stop after N files with matches
-- `--max-matches N` — Stop after N total match lines
+- `--max-matches N` — Stop after N total matches
 
-Caps are applied **after sorting**, so truncated output remains stable.
+## Options Reference
 
-## Reproducibility
+Run `aux grep --help` for the complete, authoritative option list:
 
-Every invocation emits:
-
-- `param_block` — Full parameter set including `argv`
-- `query_id` — SHA256 hash of normalized parameters
+- `<pattern>` — Search pattern (positional, required in simple mode)
+- `--root <path>` — Root directory (required)
+- `--glob <pattern>` — Include glob (repeatable)
+- `--exclude <pattern>` — Exclude glob (repeatable)
+- `--case <smart|sensitive|insensitive>` — Case behavior
+- `--context <n>` — Lines of context around matches
+- `--fixed` — Treat pattern as literal (default: regex)
+- `--hidden` — Search hidden files
+- `--no-ignore` — Don't respect gitignore
+- `--max-matches <n>` — Maximum matches to return
