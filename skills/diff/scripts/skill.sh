@@ -7,11 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
 cmd_help() {
-    cat <<'EOF'
+    cat <<'HELP'
 diff - Deterministic file/directory comparison
 
 Commands:
   help                         Show this help message
+  init                         Emit all skill reference docs (concatenated)
   validate                     Verify the skill is runnable (read-only)
   schema                       Emit JSON schema for plan input
   run [opts] <path_a> <path_b> Execute a file/directory comparison
@@ -32,7 +33,36 @@ Examples:
   echo '{"path_a":"/a","path_b":"/b"}' | skill.sh run --stdin
 
 Execution backend: aux diff (aux-skills CLI)
-EOF
+HELP
+}
+
+cmd_init() {
+    local refs_dir="$SKILL_DIR/references"
+    local idx=1
+
+    # Emit TOC header first
+    echo "# References"
+    echo ""
+    for f in "$refs_dir"/[0-9][0-9]_*.md; do
+        [[ "$(basename "$f")" == "00_ROUTER.md" ]] && continue
+        [[ -f "$f" ]] || continue
+        local name desc
+        name=$(basename "$f" .md | sed 's/^[0-9]*_//')
+        desc=$(grep -m1 '^description:' "$f" 2>/dev/null | sed 's/^description:[[:space:]]*//' || echo "")
+        echo "${idx}. **${name}** — ${desc}"
+        idx=$((idx + 1))
+    done
+    echo ""
+    echo "---"
+    echo ""
+
+    # Emit content
+    for f in "$refs_dir"/[0-9][0-9]_*.md; do
+        [[ "$(basename "$f")" == "00_ROUTER.md" ]] && continue
+        [[ -f "$f" ]] || continue
+        cat "$f"
+        echo ""
+    done
 }
 
 cmd_validate() {
@@ -70,6 +100,9 @@ cmd_run() {
 case "${1:-help}" in
     help)
         cmd_help
+        ;;
+    init)
+        cmd_init
         ;;
     validate)
         cmd_validate

@@ -8,14 +8,10 @@ metadata:
   author: Jordan Godau
   version: 0.1.0
   references:
-    - references/00_ROUTER.md
     - references/01_SUMMARY.md
-    - references/02_CONTRACTS.md
-    - references/03_TRIGGERS.md
-    - references/04_NEVER.md
-    - references/05_ALWAYS.md
-    - references/06_PROCEDURE.md
-    - references/07_FAILURES.md
+    - references/02_INTENT.md
+    - references/03_POLICIES.md
+    - references/04_PROCEDURE.md
   scripts:
     - scripts/skill.sh
     - scripts/skill.ps1
@@ -30,4 +26,4 @@ metadata:
 
 # INSTRUCTIONS
 
-1. Refer to `metadata.references`.
+1. Run `./scripts/skill.sh init` and follow the instructions.
