@@ -1,0 +1,22 @@
+metadata:
+  date: 2026-01-29
+  agent: cascade
+  vendor: windsurf
+  llm:
+    context: 384k
+    model: gpt-5.2
+    reasoning: medium
+  artifacts:
+    - path: A.md
+      description: Session A (no skills)
+    - path: B.md
+      description: Session B (with skills)
+    - path: COMPARISON.md
+      description: Table comparison of A vs B
+    - path: CONCLUSION.md
+      description: Final analysis and recommendations
+  assets:
+    - path: ../../prompt/01_TASK.md
+      description: Original task prompt.
+    - path: ../../prompt/02_AFTER.md
+      description: Post-task analysis prompt.
