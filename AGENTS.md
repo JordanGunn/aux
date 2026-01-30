@@ -4,12 +4,12 @@
 
 All skills live under `skills/`:
 
-| Skill | Manifest Path |
-|-------|---------------|
+| Skill | Manifest Path          |
+|-------|------------------------|
 | grep  | `skills/grep/SKILL.md` |
 | find  | `skills/find/SKILL.md` |
 | diff  | `skills/diff/SKILL.md` |
-| ls    | `skills/ls/SKILL.md` |
+| ls    | `skills/ls/SKILL.md`   |
 
 ## CLI Execution
 
@@ -23,8 +23,19 @@ aux ls --help
 aux doctor  # Check system dependencies
 ```
 
+## Schema (Source of Truth)
+
+Always fetch the current schema before building a plan:
+
+```bash
+aux grep --schema
+aux find --schema
+aux diff --schema
+aux ls --schema
+```
+
 ## For ASI Skill Design
 
 Refer to the ASI framework at:
 
-- /home/jgodau/work/personal/asi/AGENTS.md
+- [ASI (Agentic Skill Interface)](https://github.com/JordanGunn/asi)
