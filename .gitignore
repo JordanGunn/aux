@@ -43,3 +43,14 @@ Thumbs.db
 # Artifacts (kept ephemeral by default)
 *.artifact.json
 .asi/
+
+# Agents
+.windsurf/
+.cursor/
+.codex/
+.claude/
+.github/
+
+# Misc
+docs/.experiments/
+
