@@ -2,6 +2,10 @@ metadata:
   date: 2026-01-29
   agent: cascade
   vendor: windsurf
+  mcp:
+    - gitlab
+    - context7
+    - filesystem
   llm:
     context: 384k
     model: gpt-5.2

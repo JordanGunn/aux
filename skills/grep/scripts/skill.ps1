@@ -14,17 +14,28 @@ Commands:
   help                         Show this help message
   validate                     Verify the skill is runnable (read-only)
   schema                       Emit JSON schema for plan input
-  run [opts]                   Execute a deterministic text search
+  run [opts] <pattern>         Execute a deterministic text search
 
-Options (run):
-  --root <path>                Root directory (default: .)
-  --pattern <text>             Search pattern (repeatable)
+Usage (run):
+  skill.ps1 run <pattern> --root <path> [options]
+  skill.ps1 run --stdin                           # Read plan JSON from stdin
+
+Options:
+  <pattern>                    Search pattern (positional, required)
+  --root <path>                Root directory (required)
   --glob <pattern>             Include glob (repeatable)
   --exclude <pattern>          Exclude glob (repeatable)
-  --case <sensitive|insensitive|smart>  Case behavior (default: smart)
+  --case <smart|sensitive|insensitive>  Case behavior (default: smart)
   --context <n>                Lines of context (default: 0)
-  --max-matches <n>            Max matches (default: 1000)
-  --stdin                      Read plan JSON from stdin
+  --max-matches <n>            Max matches to return
+  --fixed                      Treat pattern as literal (default: regex)
+  --hidden                     Search hidden files
+  --no-ignore                  Don't respect gitignore
+
+Examples:
+  skill.ps1 run "TODO|FIXME" --root ./src --glob "*.py"
+  skill.ps1 run "oauth" --root /path --case insensitive
+  '{"root":"/path","patterns":[{"kind":"regex","value":"auth"}]}' | skill.ps1 run --stdin
 
 Execution backend: aux grep (aux-skills CLI)
 "@

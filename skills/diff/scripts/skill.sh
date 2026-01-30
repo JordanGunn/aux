@@ -14,14 +14,22 @@ Commands:
   help                         Show this help message
   validate                     Verify the skill is runnable (read-only)
   schema                       Emit JSON schema for plan input
-  run [opts]                   Execute a file/directory comparison
+  run [opts] <path_a> <path_b> Execute a file/directory comparison
 
-Options (run):
-  <path_a> <path_b>            Paths to compare
+Usage (run):
+  skill.sh run <path_a> <path_b> [options]
+  skill.sh run --stdin                           # Read plan JSON from stdin
+
+Options:
+  <path_a> <path_b>            Paths to compare (positional, required)
   --context <n>                Lines of context (default: 3)
   --ignore-whitespace          Ignore whitespace differences
   --ignore-case                Ignore case differences
-  --stdin                      Read plan JSON from stdin
+
+Examples:
+  skill.sh run ./old.txt ./new.txt
+  skill.sh run /path/a /path/b --context 5 --ignore-whitespace
+  echo '{"path_a":"/a","path_b":"/b"}' | skill.sh run --stdin
 
 Execution backend: aux diff (aux-skills CLI)
 EOF

@@ -14,15 +14,25 @@ Commands:
   help                         Show this help message
   validate                     Verify the skill is runnable (read-only)
   schema                       Emit JSON schema for plan input
-  run [opts]                   Execute a deterministic directory inventory
+  run [opts] [path]            Execute a deterministic directory inventory
 
-Options (run):
-  <path>                       Directory to list (default: .)
+Usage (run):
+  skill.ps1 run [path] [options]
+  skill.ps1 run --stdin                           # Read plan JSON from stdin
+
+Options:
+  [path]                       Directory to list (positional, default: .)
   --depth <n>                  Recursion depth (default: 1)
   --sort <name|size|time>      Sort order (default: name)
   --hidden                     Include hidden files
-  --max-entries <n>            Max entries (default: 100)
-  --stdin                      Read plan JSON from stdin
+  --size                       Show file sizes (default: true)
+  --time                       Show modification times
+  --max-entries <n>            Max entries to return
+
+Examples:
+  skill.ps1 run ./src
+  skill.ps1 run /path --depth 2 --sort size --hidden
+  '{"path":"/path","depth":3}' | skill.ps1 run --stdin
 
 Execution backend: aux ls (aux-skills CLI)
 "@

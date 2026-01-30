@@ -16,15 +16,24 @@ Commands:
   schema                       Emit JSON schema for plan input
   run [opts]                   Execute a deterministic file enumeration
 
-Options (run):
-  --root <path>                Root directory (default: .)
+Usage (run):
+  skill.sh run --root <path> [options]
+  skill.sh run --stdin                           # Read plan JSON from stdin
+
+Options:
+  --root <path>                Root directory (required)
   --glob <pattern>             Glob pattern for names (repeatable)
   --exclude <pattern>          Exclude pattern (repeatable)
   --type <file|directory|any>  Entry type (default: file)
   --max-depth <n>              Maximum directory depth
-  --max-results <n>            Max results (default: 500)
+  --max-results <n>            Max results to return
   --hidden                     Include hidden files
-  --stdin                      Read plan JSON from stdin
+  --no-ignore                  Don't respect gitignore
+
+Examples:
+  skill.sh run --root ./src --glob "*.py"
+  skill.sh run --root /path --type directory --max-depth 2
+  echo '{"root":"/path","globs":["*.md"]}' | skill.sh run --stdin
 
 Execution backend: aux find (aux-skills CLI)
 EOF
