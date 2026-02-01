@@ -15,7 +15,7 @@
 The repository provides an `llms.txt` file ([see spec](https://llmstxt.org/)) for agent fetching.
 
 If you don't want to read the docs, ask your agent to do it for you:
-> Please fetch and summarize the AUx skills repository and summarize the contents from [llms.txt](https://raw.githubusercontent.com/JordanGunn/aux/refs/heads/master/llms.txt).
+> Please fetch the AUx skills repository and summarize the contents from [llms.txt](https://raw.githubusercontent.com/JordanGunn/aux/refs/heads/master/llms.txt).
 
 ---
 
