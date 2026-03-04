@@ -1,209 +1,180 @@
 # find
 
->**Agent-assisted file enumeration using fd**
+Read-only tree-sitter structural search. Executes AST queries over a codebase and returns matched captures without modifying any files.
 
 ## Overview
 
-The `find` skill performs deterministic, auditable file enumeration over a directory tree. It converts natural language intent into explicit fd parameters and executes a portable disk scan.
+`find` is the structural search complement to `search`. Where `search` matches text patterns, `find` matches AST shapes — functions with specific names, call expressions, import statements, class definitions, and any other syntactic construct expressible in tree-sitter's query language.
 
-The output is a list of file paths suitable for **surface discovery** — understanding what exists before reading contents.
+**Key properties:**
+- Read-only — no filesystem writes under any circumstances
+- Deterministic — same plan JSON produces same output
+- Language-aware — parses source into AST before matching
+- Grammar-optional — files with no installed grammar are silently skipped
 
-## When to Use
-
-- "What Python files are in this project?"
-- "Find all configuration files"
-- "List directories matching this pattern"
-- "Show me all test files"
-
-## Key Capabilities
-
-- **Pattern matching** — Glob or regex patterns for file names
-- **Extension filtering** — Filter by one or more file extensions
-- **Type filtering** — Files, directories, or any
-- **Depth control** — Limit search depth
-- **Exclusions** — Skip directories or patterns (e.g., `node_modules`, `.git`)
-- **Bounded output** — Configurable result limits
-
-## Example: Cross-Cutting Feature Discovery
-
-A developer needs to identify all files related to authentication across a large polyglot monorepo. Rather than manually searching through hundreds of directories, they invoke the find skill:
-
-```text
-/find please identify all usages of oauth2 related stuff
-```
-
-### What happens
-
-1. **Agent interprets intent** — Understands multiple patterns needed (oauth, oauth2, dex, auth)
-2. **Agent generates multiple searches** — Runs targeted enumeration for each pattern
-3. **Script executes deterministically** — Each search produces reproducible results
-4. **Results are aggregated** — Comprehensive view across the codebase
-
-### Sample execution
-
-```text
-● Find all files with oauth in name
-  $ bash scripts/skill.sh run --root /path/to/repo --pattern "*oauth*" --type file --max-results 500
-   └ 16 lines...
-
-● Find all files with dex in name
-  $ bash scripts/skill.sh run --root /path/to/repo --pattern "*dex*" --type file --max-results 500
-   └ 27 lines...
-
-● Find all files with auth in name excluding node_modules
-  $ bash scripts/skill.sh run --root /path/to/repo --pattern "*auth*" --type file --max-results 500 --exclude "node_modules"
-   └ 22 lines...
-
-● Find OAuth directories
-  $ bash scripts/skill.sh run --root /path/to/repo --pattern "*oauth*" --type directory --max-results 500
-   └ 14 lines...
-
-● Find all files in oauth2 templates directory
-  $ bash scripts/skill.sh run --root /path/to/repo/deploy/templates/oauth2 --pattern "*" --type file --max-results 100
-   └ 16 lines...
-
-● Find all files in backend auth directory
-  $ bash scripts/skill.sh run --root /path/to/repo/backend/server/internal/auth --pattern "*" --type file --max-results 100
-   └ 23 lines...
-```
-
-### Sample summary
-
-```text
-Total OAuth2-Related Files: 42
-
-Backend Implementation (13 files)
-  Authentication Module (backend/server/internal/auth/):
-    - All 11 files in auth package including token management, controllers, claims
-  Environment & Middleware:
-    - backend/server/internal/env/oauth2.go - OAuth2 config
-    - backend/server/internal/env/dex.go - Identity provider integration
-    - backend/server/internal/middleware/auth.go - Auth middleware
-
-  Client Library (2 files)
-    - client/internal/auth/auth.go
-    - client/internal/auth/oauth2.go
-
-Deployment Configuration (22 files)
-  OAuth2-Proxy (4 files in deploy/templates/oauth2/):
-    - ConfigMap, Deployment, Secret, Service
-  Identity Provider (11 files in deploy/templates/dex/):
-    - Core resources: ConfigMap, Deployment, Service, Secrets, RBAC
-    - Client configs and connector configs
-
-Container Definitions (2 files)
-  - containers/oauth2-proxy/Containerfile
-  - containers/oauth2-proxy/.grype.yaml
-
-Documentation & Infrastructure (2 files)
-  - docs/architecture/adr/ADR-0042-authentication.md
-  - iac/bicep/module/identity/roleassignment/authorization.bicep
-```
-
-### Why this matters
-
-In a **polyglot monorepo** with multiple languages (Go, Python, TypeScript) and dozens of services:
-
-- Authentication touches many layers (backend, deployment, infrastructure)
-- Files are scattered across different architectural boundaries
-- Manual exploration would miss edge cases
-
-The find skill:
-
-- **Surfaces cross-cutting concerns** — Find all files related to a feature across layers
-- **Supports iterative refinement** — Run multiple searches with different patterns
-- **Enables architectural reasoning** — Understand how features are distributed
-- **Produces audit trails** — Each search has a stable query_id for reproducibility
-
-## Agent Usage (Under the hood)
-
-### Command Line
+## Prerequisites
 
 ```bash
-# Find all Python files
-scripts/skill.sh run --root /path/to/repo --extension py --type file
-
-# Find directories matching a pattern
-scripts/skill.sh run --root /path/to/repo --pattern "*test*" --type directory
-
-# Find with exclusions
-scripts/skill.sh run --root /path/to/repo --extension js --exclude "node_modules" --exclude "dist"
-
-# Include hidden files
-scripts/skill.sh run --root /path/to/repo --pattern ".*" --hidden
+pip install 'aux-skills[query]'   # installs tree-sitter + grammar packages
+aux find --languages               # verify which grammars are available
 ```
 
-### Via Plan (stdin)
+## Usage
+
+### Simple mode
 
 ```bash
-cat <<EOF | scripts/skill.sh run --stdin
+aux find "(function_definition name: (identifier) @name)" \
+    --root /path/to/src --glob "*.py"
+
+aux find "(call_expression function: (identifier) @fn)" \
+    --root /path/to/src --glob "*.js" --max-matches 50
+```
+
+### Plan mode
+
+```bash
+aux find --plan '{
+  "query": "(function_definition name: (identifier) @name)",
+  "root": "/path/to/src",
+  "globs": ["*.py"],
+  "max_matches": 100
+}'
+```
+
+### Grammar introspection
+
+```bash
+aux find --languages
+```
+
+Output:
+```json
 {
-  "schema": "find_plan_v2",
-  "find": {
-    "root": "/path/to/repo",
-    "include_patterns": [{"kind": "glob", "value": "*.py"}],
-    "exclude_patterns": [{"kind": "glob", "value": "__pycache__"}],
-    "extensions": [],
-    "type": "file",
-    "max_depth": null,
-    "max_results": 1000,
-    "format": "auto",
-    "policy": {
-      "hidden": false,
-      "follow": false,
-      "no_ignore": false
-    },
-    "limits": {
-      "max_pattern_length": 512,
-      "max_exclude_pattern_length": 512
-    }
-  }
+  "available": ["python", "javascript", "typescript"],
+  "unavailable": ["rust", "go"],
+  "install": "pip install 'aux-skills[query]'"
 }
-EOF
 ```
 
-## Output Formats
+### Schema
 
-### Human (TTY)
-
-```
-# query_id: sha256:def456...
-# root: /path/to/repo
-# include_patterns: [{"kind": "glob", "value": "*.py"}]
-# extensions: []
-# type: file
-
-total: 127
-files: 127
-directories: 0
-
-data/processing/__init__.py
-data/processing/core/engine.py
-...
+```bash
+aux find --schema
 ```
 
-### JSONL (pipe/file)
+## Plan Schema
 
 ```json
-{"kind":"param_block","param_block":{...}}
-{"kind":"summary","total":127,"files":127,"directories":0,"truncated":false}
-{"kind":"entry","path":"data/processing/__init__.py","type":"file"}
-{"kind":"entry","path":"data/processing/core/engine.py","type":"file"}
+{
+  "query": "(function_definition name: (identifier) @name)",
+  "files": [],
+  "root": "/path/to/src",
+  "globs": ["*.py"],
+  "excludes": ["**/test_*.py"],
+  "language": null,
+  "max_matches": null
+}
 ```
 
-## Dependencies
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query` | string | yes | Tree-sitter query string |
+| `files` | list[str] | no | Explicit file paths |
+| `root` | string | no | Root directory for glob targeting |
+| `globs` | list[str] | no | Include globs (requires `root`) |
+| `excludes` | list[str] | no | Exclude globs |
+| `language` | string | no | Language override (auto-detected if null) |
+| `max_matches` | int | no | Maximum total matches |
 
-- **fd** (`fd` or `fdfind`) — Must be installed and available in PATH
-  - On Debian/Ubuntu: `apt install fd-find` (binary is `fdfind`)
-  - On macOS: `brew install fd`
-  - On Arch: `pacman -S fd`
-- **uv** — Python package manager for running the CLI
-- **Python 3.10+**
+Either `files` or `root` must be provided.
 
-## Constraints
+## Output Format
 
-- **Read-only** — Never modifies files
-- **Deterministic** — Same parameters produce same results
-- **Auditable** — All criteria visible in output
-- **Bounded** — Output capped by `max_results`
-- **No content access** — Only enumerates paths, does not read file contents
+```json
+{
+  "files_searched": 12,
+  "files_with_matches": 5,
+  "total_matches": 23,
+  "matches": [
+    {
+      "file": "/abs/path/module.py",
+      "language": "python",
+      "captures": [
+        {"name": "name", "text": "my_function", "line": 10, "col": 4}
+      ]
+    }
+  ]
+}
+```
+
+Each entry in `matches` is one match group (one pattern firing). Each `captures` entry is one captured node, with:
+- `name` — capture name from the query (e.g. `"name"`)
+- `text` — the matched source text
+- `line` — 1-based line number
+- `col` — 0-based column offset
+
+## Supported Languages
+
+| Language | Extension(s) | Grammar package |
+|----------|-------------|-----------------|
+| Python | `.py` | `tree_sitter_python` |
+| JavaScript | `.js` | `tree_sitter_javascript` |
+| TypeScript | `.ts`, `.tsx` | `tree_sitter_typescript` |
+| Rust | `.rs` | `tree_sitter_rust` |
+| Go | `.go` | `tree_sitter_go` |
+| Java | `.java` | `tree_sitter_java` |
+| C | `.c`, `.h` | `tree_sitter_c` |
+| C++ | `.cpp`, `.cc`, `.cxx` | `tree_sitter_cpp` |
+| Ruby | `.rb` | `tree_sitter_ruby` |
+| Bash | `.sh`, `.bash` | `tree_sitter_bash` |
+
+## Tree-Sitter Query Syntax
+
+Basic patterns:
+
+```
+(node_type)                             # match any node of this type
+(node_type) @capture                    # match and capture
+(parent field: (child) @capture)        # match with field name
+(node (#eq? @cap "value"))              # predicate: exact match
+(node (#match? @cap "^prefix"))         # predicate: regex match
+```
+
+Example queries:
+
+```
+# All Python function names
+(function_definition name: (identifier) @name)
+
+# All JavaScript arrow functions
+(arrow_function) @fn
+
+# All Python imports
+(import_statement name: (dotted_name) @module)
+
+# Functions named "test_*"
+(function_definition name: (identifier) @name (#match? @name "^test_"))
+
+# All class method definitions
+(class_definition body: (block (function_definition name: (identifier) @method)))
+```
+
+## Skill Interface
+
+```bash
+# Init (agent onboarding)
+./skills/find/scripts/skill.sh init
+
+# Validate (dependency check)
+./skills/find/scripts/skill.sh validate
+
+# Schema
+./skills/find/scripts/skill.sh schema
+
+# Run (simple)
+./skills/find/scripts/skill.sh run "(function_definition name: (identifier) @name)" --root /path --glob "*.py"
+
+# Run (plan via stdin)
+echo '{"query":"...","root":"/path","globs":["*.py"]}' | ./skills/find/scripts/skill.sh run --stdin
+```

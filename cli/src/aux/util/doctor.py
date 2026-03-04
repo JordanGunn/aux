@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from aux.util.subprocess import which, run_tool
+import importlib
 
+from aux.util.subprocess import run_tool, which
 
 REQUIRED_TOOLS = {
     "rg": {
@@ -17,15 +18,41 @@ REQUIRED_TOOLS = {
         "commands": ["find"],
         "alternatives": ["fdfind"],  # Debian/Ubuntu
     },
+}
+
+OPTIONAL_TOOLS = {
     "git": {
         "name": "git",
         "install": "https://git-scm.com/downloads",
-        "commands": ["diff"],
+        "commands": ["delta"],
+        "description": "Git version control (required for aux delta)",
     },
-    "diff": {
-        "name": "diff",
-        "install": "Usually pre-installed on Unix systems",
-        "commands": ["diff"],
+}
+
+OPTIONAL_PYTHON_PACKAGES = {
+    "tree_sitter": {
+        "name": "tree-sitter",
+        "install": "pip install 'aux-skills[query]'",
+        "commands": ["sed (query mode)", "query"],
+        "description": "AST-aware structural search and substitution",
+    },
+    "httpx": {
+        "name": "httpx",
+        "install": "pip install 'aux-skills[curl]'",
+        "commands": ["curl"],
+        "description": "HTTP client for aux curl (required)",
+    },
+    "trafilatura": {
+        "name": "trafilatura",
+        "install": "pip install 'aux-skills[curl]'",
+        "commands": ["curl (text/markdown mode)"],
+        "description": "HTML → clean text extraction for aux curl",
+    },
+    "html2text": {
+        "name": "html2text",
+        "install": "pip install 'aux-skills[curl]'",
+        "commands": ["curl (markdown mode fallback)"],
+        "description": "HTML → Markdown fallback for aux curl",
     },
 }
 
@@ -80,6 +107,36 @@ def check_tool(name: str) -> dict:
     }
 
 
+def check_python_package(name: str) -> dict:
+    """Check if an optional Python package is importable.
+
+    Args:
+        name: Import name of the package (e.g. "tree_sitter")
+
+    Returns:
+        Dict with availability info
+    """
+    info = OPTIONAL_PYTHON_PACKAGES.get(name, {"name": name, "install": "pip install " + name})
+
+    try:
+        mod = importlib.import_module(name)
+        version = getattr(mod, "__version__", None)
+        return {
+            "name": info["name"],
+            "available": True,
+            "version": version,
+            "description": info.get("description", ""),
+        }
+    except ImportError:
+        return {
+            "name": info["name"],
+            "available": False,
+            "version": None,
+            "install": info["install"],
+            "description": info.get("description", ""),
+        }
+
+
 def run_doctor() -> dict:
     """Run full system dependency check.
 
@@ -95,8 +152,33 @@ def run_doctor() -> dict:
         if not check["available"]:
             all_ok = False
 
+    # Optional system tools (reported but not required)
+    for tool_name, info in OPTIONAL_TOOLS.items():
+        path = which(tool_name)
+        version = None
+        if path:
+            try:
+                r = run_tool([tool_name, "--version"], timeout=5.0)  # type: ignore[arg-type]
+                if r.ok and r.stdout:
+                    version = r.stdout.strip().split("\n")[0]
+            except Exception:
+                pass
+        results[tool_name] = {
+            "name": info["name"],
+            "available": path is not None,
+            "path": str(path) if path else None,
+            "version": version,
+            "optional": True,
+            "description": info.get("description", ""),
+        }
+
+    python_packages = {}
+    for pkg_name in OPTIONAL_PYTHON_PACKAGES:
+        python_packages[pkg_name] = check_python_package(pkg_name)
+
     return {
         "ok": all_ok,
         "tools": results,
+        "python_packages": python_packages,
         "message": "All dependencies available" if all_ok else "Some dependencies missing",
     }

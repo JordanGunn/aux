@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# find skill - Agent-assisted file enumeration
+# find skill - Read-only tree-sitter structural search
 # Invokes the aux CLI as the execution backend
 set -euo pipefail
 
@@ -8,33 +8,36 @@ SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
 cmd_help() {
     cat <<'EOF'
-find - Agent-assisted file enumeration (deterministic fd wrapper)
+find - Read-only tree-sitter structural search (AST-aware)
 
 Commands:
   help                         Show this help message
   init                         Emit all skill reference docs (concatenated)
   validate                     Verify the skill is runnable (read-only)
   schema                       Emit JSON schema for plan input
-  run [opts]                   Execute a deterministic file enumeration
+  run [opts] <query>           Execute a structural search
 
 Usage (run):
-  skill.sh run --root <path> [options]
+  skill.sh run <query> --root <path> [options]
   skill.sh run --stdin                           # Read plan JSON from stdin
 
 Options:
-  --root <path>                Root directory (required)
-  --glob <pattern>             Glob pattern for names (repeatable)
-  --exclude <pattern>          Exclude pattern (repeatable)
-  --type <file|directory|any>  Entry type (default: file)
-  --max-depth <n>              Maximum directory depth
-  --max-results <n>            Max results to return
-  --hidden                     Include hidden files
-  --no-ignore                  Don't respect gitignore
+  <query>                      Tree-sitter query string (positional, required)
+  --root <path>                Root directory (required unless --file used)
+  --file <path>                Explicit file to search (repeatable)
+  --glob <pattern>             Include glob (repeatable)
+  --exclude <pattern>          Exclude glob (repeatable)
+  --language <name>            Language override (auto-detected if omitted)
+  --max-matches <n>            Max total matches to return
+  --languages                  List available/unavailable grammar packages
 
 Examples:
-  skill.sh run --root ./src --glob "*.py"
-  skill.sh run --root /path --type directory --max-depth 2
-  echo '{"root":"/path","globs":["*.md"]}' | skill.sh run --stdin
+  skill.sh run "(function_definition name: (identifier) @name)" --root ./src --glob "*.py"
+  skill.sh run "(import_statement) @import" --root /path --glob "*.py" --max-matches 50
+  echo '{"query":"(function_definition name: (identifier) @name)","root":"/path","globs":["*.py"]}' | skill.sh run --stdin
+
+Grammar check:
+  aux find --languages
 
 Execution backend: aux find (aux-skills CLI)
 EOF
@@ -79,6 +82,11 @@ cmd_validate() {
 
     if [[ $errors -gt 0 ]]; then
         return 1
+    fi
+
+    # Check optional tree-sitter dependency
+    if ! python -c "import tree_sitter" 2>/dev/null; then
+        echo "warn: tree-sitter not installed (find unavailable). Install with: pip install 'aux-skills[query]'" >&2
     fi
 
     # Delegate to CLI doctor for full dependency check

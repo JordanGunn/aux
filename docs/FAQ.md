@@ -33,17 +33,17 @@ Install these prerequisites manually before running install. See [QUICKSTART.md]
 
 ## Why don't skills install anything automatically?
 
-Skills are designed to be **read-only** and **non-mutating** by default:
+Skills are **read-only by default** and never install packages, binaries, or modify system state.
 
-- They never write outside their designated artifact directories (`.aux/`)
-- They never install packages, binaries, or modify system state
-- They never make network requests (except for dependency installation during install)
+Write skills (`replace`, `rename`) are the exception: they can mutate target files, but require
+an explicit `--apply` flag. Without `--apply`, they run in dry-run mode and emit a preview of
+what would change — no files are touched.
 
-This ensures:
+This design ensures:
 
-- **Auditability** — You can inspect exactly what a skill does
+- **Auditability** — You can inspect exactly what a skill does before it runs
 - **Reproducibility** — Same inputs produce same outputs
-- **Trust** — Skills can be safely invoked by agents without fear of side effects
+- **Trust** — Read skills can be safely invoked by agents without fear of side effects; write skills require deliberate opt-in
 
 ---
 
@@ -67,13 +67,13 @@ Skills are designed for agent invocation, but they can be run manually for debug
 
 ```bash
 # Validate a skill is runnable
-./grep/scripts/skill.sh validate
+./search/scripts/skill.sh validate
 
 # Run with a plan from stdin
-cat plan.json | ./grep/scripts/skill.sh run --stdin
+cat plan.json | ./search/scripts/skill.sh run --stdin
 
 # Run with CLI arguments (skill-specific)
-./grep/scripts/skill.sh run --root /path/to/repo --pattern "TODO"
+aux usages EventHandler --root /path/to/repo --glob "**/*.py"
 ```
 
 However, the intended use is always via an agent that generates appropriate plans.
@@ -120,18 +120,14 @@ Both scripts implement the same interface and produce the same results.
 
 ## Where do skills write output?
 
-Skills write artifacts to a `.aux/` directory in the working directory:
+**Read skills** (`search`, `files`, `usages`, `deps`, `delta`, `prune`, `curl`, `find`) emit
+JSON to stdout. They do not write to disk.
 
-```
-.aux/
-  grep/<query_id>_receipt.json
-  find/<query_id>_receipt.json
-  diff/<comparison>_receipt.json
-  diff/<comparison>.patch
-  ls/<query_id>_receipt.json
-```
+**Write skills** (`replace`, `rename`) modify target files in-place when run with `--apply`.
+Without `--apply` (the default), they emit a dry-run preview to stdout and touch nothing.
 
-This directory can be safely added to `.gitignore` if you don't want to track artifacts.
+No `.aux/` directory is created. All output goes to stdout and is consumed directly by the
+invoking agent or terminal session.
 
 ---
 

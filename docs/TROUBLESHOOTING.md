@@ -47,9 +47,9 @@ error: fd not found. Install fd-find (binary may be 'fdfind' on Debian/Ubuntu).
 
 **Solution:** Install the missing dependencies. See [QUICKSTART.md](QUICKSTART.md) for installation instructions:
 
-- **ripgrep** (`rg`): Required for grep skill
-- **fd** (`fd` or `fdfind`): Required for find skill
-- **git**: Required for diff and ls git-status features
+- **ripgrep** (`rg`): Required for `search`, `usages`, `prune`, `replace` skills
+- **fd** (`fd` or `fdfind`): Required for `files`, `search` skills
+- **git**: Required for `delta` skill
 - **python** (3.10+): Required for all skills
 - **uv**: Required for installation
 
@@ -181,11 +181,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 ## Git-related features don't work
 
-**Symptom:** The `--git-status` flag or diff skill doesn't work.
+**Symptom:** The `delta` skill fails or returns no output.
 
 **Possible causes:**
 
-1. **Not in a git repository** — These features require a git working tree
+1. **Not in a git repository** — `delta` requires a git working tree
 2. **Git not installed** — Install git
 3. **Corrupted git state** — Try `git status` directly to diagnose
 

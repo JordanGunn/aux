@@ -68,28 +68,47 @@ def find_kernel(
                 errors=["fd not found. Install from https://github.com/sharkdp/fd"],
             )
 
-    args = _build_fd_args(
-        fd_cmd=fd_cmd,
-        globs=globs,
-        excludes=excludes,
-        type_filter=type_filter,
-        max_depth=max_depth,
-        hidden=hidden,
-        no_ignore=no_ignore,
-    )
+    # fd's --glob is a mode-switch, not a repeatable key=value flag.
+    # Passing multiple globs in a single invocation causes fd to interpret
+    # the second and later patterns as search-path arguments, producing
+    # "Search path '*.tsx' is not a directory" errors.
+    #
+    # Fix: run fd once per glob pattern, then merge and deduplicate.
+    # When no globs are supplied, run fd exactly once without --glob (original
+    # behaviour: match all files).
+    invocations = globs if globs else [None]
 
-    result = run_tool(args, cwd=root)
+    seen: dict[str, FindEntry] = {}
+    errors: list[str] = []
 
-    if result.returncode != 0 and result.stderr:
-        return FindResult(
-            entries=[],
-            total_found=0,
-            errors=[result.stderr.strip()],
+    for glob in invocations:
+        single_glob = [glob] if glob is not None else []
+        args = _build_fd_args(
+            fd_cmd=fd_cmd,
+            globs=single_glob,
+            excludes=excludes,
+            type_filter=type_filter,
+            max_depth=max_depth,
+            hidden=hidden,
+            no_ignore=no_ignore,
         )
 
-    entries = _parse_fd_output(result.stdout, type_filter)
+        result = run_tool(args, cwd=root)
 
-    # Apply max_results limit
+        if result.returncode != 0 and result.stderr:
+            errors.append(result.stderr.strip())
+            continue
+
+        for entry in _parse_fd_output(result.stdout, type_filter):
+            if entry.path not in seen:
+                seen[entry.path] = entry
+
+    if errors and not seen:
+        return FindResult(entries=[], total_found=0, errors=errors)
+
+    entries = list(seen.values())
+
+    # Apply max_results cap across the full merged result set
     total_found = len(entries)
     if max_results and len(entries) > max_results:
         entries = entries[:max_results]
@@ -97,7 +116,7 @@ def find_kernel(
     return FindResult(
         entries=entries,
         total_found=total_found,
-        errors=[],
+        errors=errors,
     )
 
 

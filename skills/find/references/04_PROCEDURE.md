@@ -2,10 +2,11 @@
 description: Canonical execution path for this skill.
 index:
   - Step 1: Gather intent
-  - Step 2: Choose parameters
-  - Step 3: Run enumeration
-  - Step 4: Present results
+  - Step 2: Check prerequisites
+  - Step 3: Build query plan
+  - Step 4: Execute and interpret
   - CLI
+  - Output Format
 ---
 
 # Procedure
@@ -13,31 +14,56 @@ index:
 ## Step 1: Gather intent
 
 - Parse the user's `/find <prompt>` invocation
-- Identify the target file types and scope
+- Identify: what structural pattern, in which files, with what scope
+- Determine the target language (or verify auto-detection from extensions is sufficient)
 - Record assumptions explicitly
 
-## Step 2: Choose parameters
+## Step 2: Check prerequisites
 
-- Choose root directory (default: current workspace)
-- Choose include patterns (name patterns) with explicit semantics:
-  - `kind=glob` (fd `--glob`)
-  - `kind=regex` (fd default)
-- Choose extensions (file types to include)
-- Choose exclude patterns (directories/files to skip) with explicit semantics
-- Choose type filter (`file`, `directory`, `any`)
-- Set depth limit and result caps
+Verify grammar is available for the target language:
 
-## Step 3: Run enumeration
+```bash
+bash scripts/skill.sh validate
+aux find --languages
+```
 
-- Get the current schema: `bash scripts/skill.sh schema`
-- Execute via `scripts/skill.sh run` (CLI passthrough or `--stdin` for JSON plan)
-- Review the output summary
+If the grammar is unavailable, report this and suggest:
+```
+pip install 'aux-skills[query]'
+```
 
-## Step 4: Present results
+Get the current schema (source of truth for plan structure):
+```bash
+bash scripts/skill.sh schema
+# or directly: aux find --schema
+```
 
-- Present file paths sorted alphabetically
-- Report counts and type distributions
-- Suggest refinements if results are too broad or empty
+## Step 3: Build query plan
+
+- Get the schema: `bash scripts/skill.sh schema`
+- Choose file targets: explicit `files` list or `root` + `globs`
+- Write the tree-sitter query string with appropriate captures
+- Set `language` override only if auto-detection is insufficient
+- Set `max_matches` to limit output for large codebases
+
+## Step 4: Execute and interpret
+
+```bash
+# Via stdin
+echo '<plan_json>' | bash scripts/skill.sh run --stdin
+
+# Direct CLI
+aux find --plan '<plan_json>'
+
+# Simple mode
+aux find "(function_definition name: (identifier) @name)" --root /path --glob "*.py"
+```
+
+Read the output:
+- `total_matches`: how many patterns matched
+- `matches`: list of match groups with capture name, text, line, col
+- `errors`: grammar or parse errors (per-file)
+- Zero matches is valid — report it as the finding
 
 ## CLI
 
@@ -48,29 +74,47 @@ bash scripts/skill.sh schema
 # or directly: aux find --schema
 ```
 
-**Simple mode** (options as flags):
+**Check available grammars:**
 
 ```bash
-aux find --root /path --glob "*.py" --type file
+aux find --languages
 ```
 
-**Plan mode** (JSON via stdin):
+**Simple mode:**
+
+```bash
+aux find "(function_definition name: (identifier) @name)" \
+    --root /path/to/src --glob "*.py"
+
+aux find "(call_expression function: (identifier) @fn)" \
+    --root /path/to/src --glob "*.js" --max-matches 50
+```
+
+**Plan mode:**
 
 ```bash
 cat <<'JSON' | bash scripts/skill.sh run --stdin
 {
-  "root": "/path/to/search",
-  "globs": ["*.py", "*.go"],
-  "excludes": ["**/vendor/**"],
-  "type": "file",
-  "max_results": 200
+  "query": "(function_definition name: (identifier) @name)",
+  "root": "/path/to/src",
+  "globs": ["*.py"],
+  "max_matches": 100
 }
 JSON
 ```
 
-### Validate
+**Explicit files:**
 
-Before first use, verify dependencies:
+```bash
+cat <<'JSON' | bash scripts/skill.sh run --stdin
+{
+  "query": "(import_statement name: (dotted_name) @module)",
+  "files": ["/path/to/module.py"]
+}
+JSON
+```
+
+**Validate:**
 
 ```bash
 bash scripts/skill.sh validate
@@ -78,33 +122,52 @@ bash scripts/skill.sh validate
 
 ## Output Format
 
-Output is JSON with structure:
-
 ```json
 {
-  "summary": {"total": 50, "files": 42, "directories": 8},
-  "results": [
-    {"path": "src/main.py", "type": "file"}
+  "files_searched": 12,
+  "files_with_matches": 5,
+  "total_matches": 23,
+  "matches": [
+    {
+      "file": "/abs/path/module.py",
+      "language": "python",
+      "captures": [
+        {"name": "name", "text": "my_function", "line": 10, "col": 4}
+      ]
+    },
+    {
+      "file": "/abs/path/util.py",
+      "language": "python",
+      "captures": [
+        {"name": "name", "text": "helper", "line": 3, "col": 0}
+      ]
+    }
   ]
 }
 ```
 
-## Budget Flags
-
-Control output size deterministically:
-
-- `--max-results N` — Cap total results
-- `--max-depth N` — Limit directory depth
+On grammar error (per-file):
+```json
+{
+  "files_searched": 3,
+  "files_with_matches": 0,
+  "total_matches": 0,
+  "matches": [],
+  "errors": ["/abs/path/file.py: grammar not installed for language 'rust'"]
+}
+```
 
 ## Options Reference
 
-Run `aux find --help` for the complete, authoritative option list:
+Run `aux find --help` for the complete option list:
 
-- `--root <path>` — Root directory (required)
+- `<query>` — Tree-sitter query string (positional, simple mode)
+- `--file <path>` — Explicit file to search (repeatable)
+- `--root <path>` — Root directory for glob targeting
 - `--glob <pattern>` — Include glob (repeatable)
 - `--exclude <pattern>` — Exclude glob (repeatable)
-- `--type <file|directory|any>` — Entry type filter
-- `--max-depth <n>` — Maximum search depth
-- `--max-results <n>` — Maximum results to return
-- `--hidden` — Include hidden files
-- `--no-ignore` — Don't respect gitignore
+- `--language <name>` — Language override (auto-detected if omitted)
+- `--max-matches <n>` — Maximum total matches
+- `--plan '<json>'` — Full plan as JSON
+- `--schema` — Print JSON schema for --plan
+- `--languages` — List available/unavailable grammar packages

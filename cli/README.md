@@ -1,66 +1,139 @@
 # AUx CLI
 
-Unified command-line interface for AUx (Agentic Unix) skills.
+Structured I/O layer for agentic workflows — wraps Unix primitives (`rg`, `fd`, `git`, `sed`, `mv`, `curl`, tree-sitter) as deterministic, schema-driven skills with bounded output.
 
 ## Installation
 
 ```bash
-pip install aux-skills
+# From repo root
+./scripts/install.sh
+
+# Verify dependencies
+aux doctor
 ```
 
-Or for development:
+## Benchmarks
 
-```bash
-../scripts/install.sh
-```
+Across model tiers and task types, aux skills reduce tool calls by **53–93%** and tokens
+by **9–46%** while maintaining or improving output quality.
+
+| Task | Skill | Token Δ | Tool call Δ | Notes |
+|------|-------|---------|-------------|-------|
+| Codebase discovery | `search` | −16 to −36% | −53 to −76% | GPT-5.2, Haiku 4.5 |
+| Bulk text replacement | `replace` | **−46%** | **−93%** | Haiku 4.5; 79 occurrences / 6 files |
+| Symbol cross-reference | `usages` | −9% | **−80%** | Haiku 4.5 |
+| Dependency graph | `deps` | −11% | **−80%** + accuracy† | Haiku 4.5 |
+| Semantic git diff | `delta` | +8%‡ | **−71%** | Haiku 4.5 |
+
+> † `aux deps` produced correct coupling values where manual analysis made computation errors.
+> ‡ stat-only fallback (no tree-sitter); token overhead from verbose JSON vs compact git text. Install tree-sitter for semantic symbol output.
+
+**Cross-model**: GPT-5.2 Medium + AUx reduces total context cost to **~0.64×** baseline.
+GPT-5.2 Low + AUx achieves comparable quality at **~0.35×** baseline cost.
+
+Full methodology: [`docs/benchmark/`](../docs/benchmark/)
+
+## Commands
+
+| Command | Category | Description |
+|---------|----------|-------------|
+| `files` | read | Enumerate files by name/glob (fd) |
+| `search` | read | Hierarchical pipeline: fd → rg [→ tree-sitter AST] |
+| `find` | read | Tree-sitter AST structural search |
+| `usages` | analysis | Symbol cross-reference: definitions + references |
+| `prune` | analysis | Dead code candidate audit (advisory) |
+| `deps` | analysis | Module dependency graph: coupling, cycles, blast radius |
+| `delta` | analysis | Semantic git diff: files changed + symbols added/removed |
+| `replace` | write | Bulk fixed-string replacement (dry-run by default) |
+| `rename` | write | Move/rename files or directories (dry-run by default) |
+| `curl` | network | Agent-optimised HTTP fetch with progressive disclosure |
+| `capabilities` | meta | Emit skill registry for agent discovery/routing |
+| `doctor` | — | Verify system dependencies |
 
 ## Usage
 
 ```bash
 # Help
 aux --help
-aux grep --help
+aux search --help
 
 # Get JSON schema for plan-based invocation
-aux grep --schema
+aux search --schema
+aux replace --schema
 
-# Simple invocation
-aux grep "pattern" --root /path --glob "**/*.py"
-aux find --root /path --glob "**/*.go" --type file
-aux ls /path --depth 2 --sort size
-aux diff /path/a /path/b
+# Enumerate files
+aux files --root /path --glob "**/*.py"
 
-# Plan-based invocation (for agents)
-aux grep --plan '{"root":"/path","patterns":[{"kind":"regex","value":"TODO"}]}'
+# Hierarchical search (fd → rg)
+aux search --plan '{"root":"/path","surface":{"globs":["**/*.py"]},"search":{"patterns":[{"value":"TODO"}]}}'
 
-# Composite pipeline (find → grep)
-aux scan --plan '{"root":"/path","surface":{"globs":["**/*.go"]},"search":{"patterns":[{"value":"auth"}]}}'
+# Symbol cross-reference
+aux usages DataProcessor --root /path --glob "**/*.py"
+
+# Bulk replacement (dry-run by default — shows preview without mutating files)
+aux replace OldClass NewClass --root /path --glob "**/*.py"
+# Apply after reviewing dry-run output:
+aux replace OldClass NewClass --root /path --glob "**/*.py" --apply
+
+# Agent bootstrap — emit full skill registry
+aux capabilities
 
 # System check
 aux doctor
 ```
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `grep` | Search patterns in files (ripgrep) |
-| `find` | Locate files by name/glob (fd) |
-| `diff` | Compare files or directories |
-| `ls` | List directory contents with metadata |
-| `scan` | Composite: find → grep (in-process pipeline) |
-| `doctor` | Verify system dependencies |
-
 ## Architecture
 
-The CLI uses a kernel-based architecture:
+AUx has two layers:
 
-- **Kernels** (`src/aux/kernels/`): Pure functions operating on data structures
-- **Commands** (`src/aux/commands/`): Thin CLI wrappers around kernels
-- **Plans** (`src/aux/plans/`): Pydantic schemas for structured input
-- **Output** (`src/aux/output/`): Formatting and truncation utilities
+**Kernels** — structured I/O wrappers around Unix primitives:
 
-Composition happens at the kernel level, enabling in-process pipelines without intermediate I/O.
+```
+rg          → grep_kernel      (content search)
+fd          → find_kernel      (file enumeration)
+git         → delta_kernel     (change analysis)
+sed         → sed_kernel       (text replacement)
+mv          → mv_kernel        (filesystem moves)
+curl        → curl_kernel      (HTTP fetch)
+tree-sitter → query_kernel     (AST queries)
+```
+
+**Commands** — semantic ontologies built from kernel combinations:
+
+```
+search  = find_kernel + grep_kernel [+ query_kernel]
+usages  = grep_kernel + query_kernel
+prune   = find_kernel + query_kernel + grep_kernel
+delta   = delta_kernel [+ query_kernel]
+```
+
+Kernels provide structured I/O over system tools. Commands express user intent as named
+semantic operations rather than raw tool chains. Same determinism guarantee, higher-level
+abstraction.
+
+**Two invocation modes for every command:**
+
+- Simple: `aux search "pattern" --root /path --glob "*.py"`
+- Plan: `aux search --plan '<json>'` — accepts a full plan JSON matching the Pydantic schema
+
+```
+commands/<skill>.py   → arg parsing, plan construction, output formatting
+plans/schemas.py      → Pydantic models (SearchPlan, ReplacePlan, ...)
+kernels/<skill>.py    → deterministic execution
+output/               → format_output(), TTY detection, truncation
+```
+
+## System Dependencies
+
+| Dependency | Required for |
+|-----------|-------------|
+| `rg` (ripgrep) | `search`, `usages`, `prune`, `replace` |
+| `fd` / `fdfind` | `files`, `search`, `prune`, `deps`, `rename` |
+| `git` | `delta` |
+| `tree-sitter` | semantic mode for `find`, `usages`, `prune`, `delta` (optional) |
+| `httpx` | `curl` (optional; install `aux-skills[curl]`) |
+
+Run `aux doctor` to check availability.
 
 ## Environment Variables
 
@@ -68,12 +141,3 @@ Composition happens at the kernel level, enabling in-process pipelines without i
 |----------|-------------|---------|
 | `AUX_OUTPUT` | Output format: `json`, `text`, `summary` | `json` |
 | `AUX_MAX_MATCHES` | Maximum matches to return | unlimited |
-
-## System Dependencies
-
-- `rg` (ripgrep) - for grep command
-- `fd` (fd-find) - for find command
-- `git` - for diff features
-- `diff` - for diff command
-
-Run `aux doctor` to check availability.

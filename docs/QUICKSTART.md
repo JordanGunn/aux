@@ -6,14 +6,14 @@ Get up and running with aux skills in minutes.
 
 ## Prerequisites
 
-- **Python 3.10+** (3.11+ for diff skill)
+- **Python 3.10+**
 - **uv** — Install from [https://docs.astral.sh/uv/](https://docs.astral.sh/uv/)
-- **git** — For diff and ls git-status features
-- **ripgrep** (`rg`) — For grep skill
-- **fd** (`fd` or `fdfind`) — For find skill
+- **ripgrep** (`rg`) — For search, usages, prune, replace
+- **fd** (`fd` or `fdfind`) — For files, search, prune, deps, rename
   - Debian/Ubuntu: `apt install fd-find` (installs as `fdfind`)
   - macOS: `brew install fd`
   - Arch: `pacman -S fd`
+- **git** — For delta skill
 
 ---
 
@@ -51,14 +51,21 @@ The agent interprets natural language, generates an appropriate plan, invokes th
 
 ## What You Get
 
-| Skill | Purpose |
-| ----- | ------- |
-| **grep** | Agent-assisted text search using `rg` (ripgrep) |
-| **find** | Agent-assisted file enumeration using `fd` |
-| **diff** | Deterministic git diff inspection |
-| **ls** | Deterministic directory state inspection with optional git status |
+| Skill | Category | Purpose |
+| ----- | -------- | ------- |
+| **files** | read | Enumerate files by name/glob (fd) |
+| **search** | read | Hierarchical pipeline: fd → rg [→ tree-sitter AST] |
+| **find** | read | Tree-sitter AST structural search |
+| **usages** | analysis | Symbol cross-reference: definitions + references |
+| **prune** | analysis | Dead code candidate audit (advisory) |
+| **deps** | analysis | Module dependency graph: coupling, cycles, blast radius |
+| **delta** | analysis | Semantic git diff: files changed + symbols added/removed |
+| **replace** | write | Bulk fixed-string replacement (dry-run by default) |
+| **rename** | write | Move/rename files or directories (dry-run by default) |
+| **curl** | network | Agent-optimised HTTP fetch with progressive disclosure |
+| **capabilities** | meta | Emit skill registry for agent discovery/routing |
 
-See [skills/](skills/) for detailed documentation on each skill.
+See [skills/](../skills/) for detailed documentation on each skill.
 
 ## Next Steps
 

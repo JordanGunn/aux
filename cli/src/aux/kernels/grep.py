@@ -31,6 +31,7 @@ class GrepResult:
     total_matches: int
     patterns_searched: list[str]
     errors: list[str] = field(default_factory=list)
+    truncated: bool = False
 
 
 def grep_kernel(
@@ -115,8 +116,10 @@ def grep_kernel(
                 files_seen.add(m.path)
 
     # Apply max_matches limit
+    truncated = False
     if max_matches and len(all_matches) > max_matches:
         all_matches = all_matches[:max_matches]
+        truncated = True
 
     return GrepResult(
         matches=all_matches,
@@ -124,6 +127,7 @@ def grep_kernel(
         total_matches=len(all_matches),
         patterns_searched=[p["value"] for p in patterns],
         errors=errors,
+        truncated=truncated,
     )
 
 

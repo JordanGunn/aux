@@ -7,31 +7,29 @@ index:
 
 # Policies
 
+Mandatory and prohibited behaviors for this skill.
+
 ## Always
 
 The agent MUST:
 
 - Compile intent into a schema-valid plan before execution
-- Include the parameter block in all output
-- Declare explicit root, patterns, excludes, type, and caps
-- Use stable sorting for all lists
-- Report empty results with full scope context
-- Respect budget caps (`max_results`, `max_depth`)
+- Run `aux find --schema` to confirm field names before building a plan
+- Run `aux find --languages` before writing a query for an unfamiliar language
+- Declare explicit file targets (`files` or `root` + globs)
+- Report the full result in output, including files_searched and total_matches
 - Use the scripts for all execution (never raw shell)
-- Present file lists, not interpretations
 - Stop if schema validation fails
+- Treat zero matches as a valid, reportable result — not an error
 
 ## Never
 
 The agent MUST NOT:
 
-- Execute shell commands directly (use scripts)
+- Use find to modify files (it is read-only by design)
+- Substitute find for replace when writes are needed
 - Invent file paths not confirmed to exist
-- Assume repository structure without evidence
-- Modify any files (this is a read-only skill)
-- Bypass the schema validation step
-- Emit file lists without the parameter block
-- Use unbounded enumerations (must have caps)
-- Read file contents (this skill only lists paths)
-- Make claims about file contents based on names alone
 - Auto-widen scope without explicit user consent
+- Execute shell commands directly (use scripts or aux CLI)
+- Write query plan artifacts to disk unless explicitly asked
+- Assume a grammar is available without checking `--languages` first

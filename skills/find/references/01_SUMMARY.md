@@ -10,18 +10,21 @@ index:
 
 ## Identity
 
-find is a single skill that performs deterministic, auditable file enumeration over a directory tree.
-It converts imprecise human intent into explicit fd parameters and executes a portable disk scan.
-The output is a list of file paths suitable for surface discovery.
+find is a single read-only skill that performs deterministic, auditable structural search over a codebase using tree-sitter AST queries.
+It converts imprecise human intent into explicit query patterns and executes them against parsed syntax trees.
+The output is a list of matched captures suitable for code analysis and surface discovery.
 
 ## Scope
 
-find answers which files exist, what types are present, and how the directory tree is structured.
-It does not read file contents, explain behavior, or analyze semantics.
-It does not replace exploration; it governs where exploration starts.
+find answers: where do structural patterns appear, what names/expressions match a given AST shape, and how do constructs distribute across a codebase.
+It does not modify files. It does not infer behavior, architecture, or semantics.
+It is the read-only counterpart to sed query mode — analysis without mutation.
+
+Supported languages (requires grammar packages): Python, JavaScript, TypeScript, Rust, Go, Java, C, C++, Ruby, Bash.
 
 ## Constraints
 
-Execution is deterministic and reproducible for a given parameter set.
-All search criteria are visible in the invocation and echoed in output.
+Execution is deterministic and reproducible for a given plan JSON.
+All query criteria are visible in the invocation and echoed in output.
 No hidden state, indexing, or semantic inference is introduced.
+Read-only — no file writes occur under any circumstances.

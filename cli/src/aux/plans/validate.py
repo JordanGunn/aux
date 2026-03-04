@@ -7,16 +7,32 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from aux.plans.schemas import DiffPlan, FindPlan, GrepPlan, LsPlan, ScanPlan
+from aux.plans.schemas import (
+    CurlPlan,
+    DeltaPlan,
+    DepsPlan,
+    FilesPlan,
+    FindPlan,
+    PrunePlan,
+    RenamePlan,
+    ReplacePlan,
+    SearchPlan,
+    UsagesPlan,
+)
 
 T = TypeVar("T", bound=BaseModel)
 
 PLAN_TYPES: dict[str, type[BaseModel]] = {
-    "grep": GrepPlan,
+    "files": FilesPlan,
     "find": FindPlan,
-    "diff": DiffPlan,
-    "ls": LsPlan,
-    "scan": ScanPlan,
+    "search": SearchPlan,
+    "replace": ReplacePlan,
+    "rename": RenamePlan,
+    "curl": CurlPlan,
+    "usages": UsagesPlan,
+    "prune": PrunePlan,
+    "deps": DepsPlan,
+    "delta": DeltaPlan,
 }
 
 
@@ -62,14 +78,14 @@ def validate_plan(data: dict, plan_type: type[T]) -> T:
             loc = ".".join(str(x) for x in err["loc"])
             msg = err["msg"]
             errors.append(f"  {loc}: {msg}")
-        raise ValueError(f"Plan validation failed:\n" + "\n".join(errors)) from e
+        raise ValueError("Plan validation failed:\n" + "\n".join(errors)) from e
 
 
 def get_schema(command: str) -> dict:
     """Get JSON schema for a command's plan.
 
     Args:
-        command: Command name (grep, find, diff, ls, scan)
+        command: Command name (files, find, search, replace, curl)
 
     Returns:
         JSON schema dictionary

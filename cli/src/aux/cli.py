@@ -8,7 +8,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from aux import __version__
-from aux.commands import diff, find, grep, ls, scan
+from aux.commands import capabilities, curl, delta, deps, files, find, prune, rename, replace, search, usages
 from aux.util.doctor import run_doctor
 
 if TYPE_CHECKING:
@@ -22,16 +22,22 @@ def create_parser() -> argparse.ArgumentParser:
         description="AUx - Agentic Unix Skills CLI",
         epilog="""
 Commands:
-  grep    Search patterns in files (ripgrep)
-  find    Locate files by name/glob (fd)
-  diff    Compare files or directories
-  ls      List directory contents with metadata
-  scan    Composite: find files → grep patterns (pipeline)
-  doctor  Verify system dependencies
+  files         Enumerate files by name/glob (fd)
+  search        Hierarchical pipeline: find files → grep patterns [→ tree-sitter AST]
+  find          Read-only tree-sitter structural search (AST-aware)
+  usages        Symbol cross-reference: definitions + references in one call
+  prune         Tiered dead code candidate audit (advisory — requires human verification)
+  deps          Module dependency graph: coupling metrics, cycles, blast radius
+  delta         Semantic git diff: files changed + symbols added/removed since a ref
+  replace       Replace a string everywhere in a codebase (dry-run + apply)
+  rename        Move/rename files or directories (dry-run + apply)
+  curl          Agent-optimised HTTP fetch with progressive disclosure
+  capabilities  Emit structured skill registry for agent discovery
+  doctor        Verify system dependencies
 
 Invocation modes:
-  Simple:  aux grep "pattern" --root /path --glob "*.py"
-  Plan:    aux grep --plan '<json>'
+  Simple:  aux files --root /path --glob "*.py"
+  Plan:    aux files --plan '<json>'
 
 Environment:
   AUX_OUTPUT=json|text|summary    Output format (default: json)
@@ -53,16 +59,22 @@ Environment:
     )
 
     # Register subcommands
-    grep.register_parser(subparsers)
+    files.register_parser(subparsers)
+    search.register_parser(subparsers)
     find.register_parser(subparsers)
-    diff.register_parser(subparsers)
-    ls.register_parser(subparsers)
-    scan.register_parser(subparsers)
+    replace.register_parser(subparsers)
+    rename.register_parser(subparsers)
+    curl.register_parser(subparsers)
+    usages.register_parser(subparsers)
+    prune.register_parser(subparsers)
+    deps.register_parser(subparsers)
+    delta.register_parser(subparsers)
+    capabilities.register_parser(subparsers)
 
     # Doctor command
     doctor_parser = subparsers.add_parser(
         "doctor",
-        help="Verify system dependencies (rg, fd, git, diff)",
+        help="Verify system dependencies (rg, fd)",
         description="Check that required system tools are installed and accessible.",
     )
     doctor_parser.set_defaults(func=cmd_doctor)
