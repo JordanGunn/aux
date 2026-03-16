@@ -123,35 +123,68 @@ def _query_file(
     """Run a tree-sitter query against a single file's content.
 
     Returns a list of AstMatch, one per match group (pattern firing).
+    Supports both modern (0.25.x) and legacy tree-sitter APIs.
     """
     import tree_sitter
 
     try:
-        parser = tree_sitter.Parser(lang)
-        tree = parser.parse(content.encode(errors="replace"))
+        # Modern API: Parser() no-arg, set language via property
+        parser = tree_sitter.Parser()
+        parser.language = lang  # type: ignore[assignment]
         content_bytes = content.encode(errors="replace")
+        tree = parser.parse(content_bytes)
 
+        # Modern API: Query constructor + QueryCursor
+        query_cls = getattr(tree_sitter, "Query", None)
+        cursor_cls = getattr(tree_sitter, "QueryCursor", None)
+        if query_cls is not None and cursor_cls is not None:
+            query = query_cls(lang, query_str)
+            return _collect_matches_cursor(
+                query, cursor_cls, tree, content_bytes, str(path), language_name,
+            )
+
+        # Legacy fallback: lang.query()
         query = lang.query(query_str)  # type: ignore[attr-defined]
-
-        return _collect_matches(query, tree, content_bytes, str(path), language_name)
+        return _collect_matches_legacy(query, tree, content_bytes, str(path), language_name)
     except Exception as e:
-        # Malformed query or parse error — caller will not add to errors list here;
-        # the exception propagates to query_kernel's per-file handler
         raise RuntimeError(str(e)) from e
 
 
-def _collect_matches(
+def _collect_matches_cursor(
+    query: object,
+    cursor_cls: type,
+    tree: object,
+    content_bytes: bytes,
+    file_path: str,
+    language_name: str,
+) -> list[AstMatch]:
+    """Collect matches using modern QueryCursor API (tree-sitter >= 0.25)."""
+    root_node = tree.root_node  # type: ignore[attr-defined]
+    cursor = cursor_cls(query)
+    matches: list[AstMatch] = []
+
+    for _pattern_idx, match_dict in cursor.matches(root_node):
+        ast_captures = _dict_match_to_captures(match_dict, content_bytes)
+        if ast_captures:
+            matches.append(AstMatch(
+                file=file_path,
+                language=language_name,
+                captures=ast_captures,
+            ))
+    return matches
+
+
+def _collect_matches_legacy(
     query: object,
     tree: object,
     content_bytes: bytes,
     file_path: str,
     language_name: str,
 ) -> list[AstMatch]:
-    """Collect AstMatch instances from a compiled query run on a tree."""
+    """Collect matches using legacy Query API (tree-sitter < 0.25)."""
     root_node = tree.root_node  # type: ignore[attr-defined]
     matches: list[AstMatch] = []
 
-    # Try matches() API first (tree-sitter >= 0.22) — gives proper match grouping
     matches_method = getattr(query, "matches", None)
     if matches_method is not None:
         try:
@@ -166,9 +199,8 @@ def _collect_matches(
                     ))
             return matches
         except Exception:
-            pass  # Fall through to captures() fallback
+            pass
 
-    # Fallback: captures() — one AstMatch per captured node
     raw_captures = query.captures(root_node)  # type: ignore[attr-defined]
     cap_dict = extract_captures(raw_captures)
     for cap_name, nodes in cap_dict.items():

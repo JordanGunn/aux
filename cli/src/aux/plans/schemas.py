@@ -315,6 +315,22 @@ class DeltaPlan(BaseModel):
     max_files: int | None = Field(default=None, ge=1, description="Cap on files analyzed")
 
 
+class RobertPlan(BaseModel):
+    """Plan schema for robert command (package design metrics)."""
+
+    root: str = Field(..., description="Search root directory")
+    language: str = Field(..., description="Language to analyze: 'go' or 'python'")
+    globs: list[str] = Field(default_factory=list, description="Include globs")
+    excludes: list[str] = Field(default_factory=list, description="Exclude globs")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    max_results: int | None = Field(default=None, ge=1, description="Cap on packages in output")
+    include_main: bool = Field(
+        default=False,
+        description="Go only: include 'package main' packages in analysis",
+    )
+
+
 class CurlPlan(BaseModel):
     """Plan schema for curl command (agent-optimised HTTP fetch with progressive disclosure)."""
 

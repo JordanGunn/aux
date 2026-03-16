@@ -16,6 +16,7 @@ from aux.plans.schemas import (
     PrunePlan,
     RenamePlan,
     ReplacePlan,
+    RobertPlan,
     SearchPlan,
     UsagesPlan,
 )
@@ -33,6 +34,7 @@ PLAN_TYPES: dict[str, type[BaseModel]] = {
     "prune": PrunePlan,
     "deps": DepsPlan,
     "delta": DeltaPlan,
+    "robert": RobertPlan,
 }
 
 

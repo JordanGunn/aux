@@ -8,7 +8,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from aux import __version__
-from aux.commands import capabilities, curl, delta, deps, files, find, prune, rename, replace, search, usages
+from aux.commands import capabilities, curl, delta, deps, files, find, prune, rename, replace, robert, search, usages
 from aux.util.doctor import run_doctor
 
 if TYPE_CHECKING:
@@ -29,6 +29,7 @@ Commands:
   prune         Tiered dead code candidate audit (advisory — requires human verification)
   deps          Module dependency graph: coupling metrics, cycles, blast radius
   delta         Semantic git diff: files changed + symbols added/removed since a ref
+  robert        Robert C. Martin package design metrics (coupling, abstractness, main sequence)
   replace       Replace a string everywhere in a codebase (dry-run + apply)
   rename        Move/rename files or directories (dry-run + apply)
   curl          Agent-optimised HTTP fetch with progressive disclosure
@@ -69,6 +70,7 @@ Environment:
     prune.register_parser(subparsers)
     deps.register_parser(subparsers)
     delta.register_parser(subparsers)
+    robert.register_parser(subparsers)
     capabilities.register_parser(subparsers)
 
     # Doctor command

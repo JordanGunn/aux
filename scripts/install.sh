@@ -87,7 +87,7 @@ fi
 
 # Install as a tool using uv (creates isolated environment)
 cd "$CLI_DIR"
-uv tool install --editable . --force --quiet
+uv tool install --editable ".[query,curl,dev]" --force --quiet
 
 echo "  ✓ aux CLI installed (via uv tool)"
 echo
@@ -115,16 +115,24 @@ echo "======================="
 echo "Installation complete!"
 echo
 echo "Available skills:"
-echo "  - grep: Agent-assisted text search"
-echo "  - find: Agent-assisted file enumeration"
-echo "  - diff: Deterministic file comparison"
-echo "  - ls:   Deterministic directory inspection"
+echo "  - search:       Find files by pattern (fd → rg [→ tree-sitter])"
+echo "  - files:        Enumerate files by name/glob"
+echo "  - find:         AST structural search (tree-sitter)"
+echo "  - usages:       Symbol cross-reference (definitions + references)"
+echo "  - deps:         Import graph — coupling, cycles, blast radius"
+echo "  - delta:        Semantic git diff (files + symbols changed)"
+echo "  - prune:        Dead code candidates (advisory)"
+echo "  - robert:       Robert C. Martin package design metrics"
+echo "  - replace:      Bulk fixed-string replacement (dry-run by default)"
+echo "  - rename:       Move/rename files and directories (dry-run by default)"
+echo "  - curl:         HTTP fetch with progressive disclosure"
+echo "  - capabilities: Skill registry for agent discovery"
 echo
 echo "Usage:"
-echo "  aux grep \"pattern\" --root /path --glob \"**/*.py\""
-echo "  aux find --root /path --glob \"**/*.go\" --type file"
-echo "  aux diff /path/a /path/b"
-echo "  aux ls /path --depth 2 --sort size"
+echo "  aux search \"pattern\" --root /path --glob \"**/*.py\""
+echo "  aux files --root /path --glob \"**/*.go\""
+echo "  aux deps --root /path --language python"
+echo "  aux robert --root /path --language go"
 echo
 echo "For skill invocation via scripts:"
-echo "  ./skills/grep/scripts/skill.sh run \"pattern\" --root /path"
+echo "  ./skills/search/scripts/skill.sh run \"pattern\" --root /path"

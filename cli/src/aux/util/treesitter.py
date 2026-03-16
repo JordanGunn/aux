@@ -68,8 +68,14 @@ def load_language(name: str) -> object | None:
     try:
         import importlib
 
+        import tree_sitter
+
         mod = importlib.import_module(pkg_name)
-        lang = mod.language()
+        raw = mod.language()
+        if isinstance(raw, tree_sitter.Language):
+            lang = raw
+        else:
+            lang = tree_sitter.Language(raw)
         _LANGUAGE_CACHE[name] = lang
         return lang
     except Exception:

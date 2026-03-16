@@ -97,7 +97,7 @@ if (-not (Test-Path $pyproject)) {
 # Install as a tool using uv (creates isolated environment)
 Push-Location $CliDir
 try {
-    & uv tool install --editable . --force --quiet
+    & uv tool install --editable ".[query,curl,dev]" --force --quiet
 } finally {
     Pop-Location
 }
@@ -129,16 +129,24 @@ Write-Output "======================="
 Write-Output "Installation complete!"
 Write-Output ""
 Write-Output "Available skills:"
-Write-Output "  - grep: Agent-assisted text search"
-Write-Output "  - find: Agent-assisted file enumeration"
-Write-Output "  - diff: Deterministic file comparison"
-Write-Output "  - ls:   Deterministic directory inspection"
+Write-Output "  - search:       Find files by pattern (fd -> rg [-> tree-sitter])"
+Write-Output "  - files:        Enumerate files by name/glob"
+Write-Output "  - find:         AST structural search (tree-sitter)"
+Write-Output "  - usages:       Symbol cross-reference (definitions + references)"
+Write-Output "  - deps:         Import graph -- coupling, cycles, blast radius"
+Write-Output "  - delta:        Semantic git diff (files + symbols changed)"
+Write-Output "  - prune:        Dead code candidates (advisory)"
+Write-Output "  - robert:       Robert C. Martin package design metrics"
+Write-Output "  - replace:      Bulk fixed-string replacement (dry-run by default)"
+Write-Output "  - rename:       Move/rename files and directories (dry-run by default)"
+Write-Output "  - curl:         HTTP fetch with progressive disclosure"
+Write-Output "  - capabilities: Skill registry for agent discovery"
 Write-Output ""
 Write-Output "Usage:"
-Write-Output '  aux grep "pattern" --root /path --glob "**/*.py"'
-Write-Output '  aux find --root /path --glob "**/*.go" --type file'
-Write-Output '  aux diff /path/a /path/b'
-Write-Output '  aux ls /path --depth 2 --sort size'
+Write-Output '  aux search "pattern" --root /path --glob "**/*.py"'
+Write-Output '  aux files --root /path --glob "**/*.go"'
+Write-Output '  aux deps --root /path --language python'
+Write-Output '  aux robert --root /path --language go'
 Write-Output ""
 Write-Output "For skill invocation via scripts:"
-Write-Output '  ./skills/grep/scripts/skill.ps1 run "pattern" --root /path'
+Write-Output '  .\skills\search\scripts\skill.ps1 run "pattern" --root /path'
