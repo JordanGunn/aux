@@ -126,7 +126,7 @@ def usages_kernel(
 
     errors: list[str] = list(find_result.errors) + list(grep_result.errors)
 
-    # Step 3: AST definition extraction (graceful — no-op if tree-sitter absent)
+    # Step 3: AST definition extraction
     # Maps (abs_path_str, line) -> (symbol_type, col)
     definition_map: dict[tuple[str, int], tuple[str, int]] = {}
 
@@ -180,11 +180,6 @@ def _find_definitions(
         Tuple of (definition_map, errors) where definition_map maps
         (abs_path_str, line) -> (symbol_type, col).
     """
-    try:
-        import tree_sitter  # noqa: F401
-    except ImportError:
-        return {}, []
-
     from aux.kernels.query import query_kernel
     from aux.util.treesitter import detect_language
 

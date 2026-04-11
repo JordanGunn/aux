@@ -26,8 +26,9 @@ in a cycle? It does not modify files. It does not infer behavior or semantics.
 The execution pipeline:
 1. `find_kernel` (fd) — enumerate candidate files by glob
 2. Import extraction:
-   - AST tier (tree-sitter, optional) — language-specific import queries
-   - Text tier (fallback) — per-language regex on raw file content
+   - AST tier (tree-sitter) — language-specific import queries (default)
+   - Text tier — per-language regex on raw file content (used when AST extraction
+     fails for a specific file or no AST query is registered)
 3. Module → file resolution — best-effort stem match within scanned set
 4. Graph construction — adjacency dict, afferent/efferent counts, instability
 5. Cycle detection — DFS over resolved graph

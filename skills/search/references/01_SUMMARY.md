@@ -16,10 +16,11 @@ search is a three-tier hierarchical pipeline skill:
 |------|------|---------|
 | 1 | fd | Surface reduction — enumerate files by name/glob |
 | 2 | rg | Content match — grep patterns across tier-1 files |
-| 3 | tree-sitter | Structure match — AST query across tier-2 files (optional) |
+| 3 | tree-sitter | Structure match — AST query across tier-2 files |
 
 All three kernels pass results in-memory; no intermediate files, no shell pipelines.
-Tier 3 is optional. When omitted, search returns content matches from tiers 1 and 2.
+Tier 3 is opt-in: omit `structure` from the plan to return content matches from
+tiers 1 and 2 only. (Tree-sitter is bundled — tier 3 is always available when requested.)
 
 ## Scope
 

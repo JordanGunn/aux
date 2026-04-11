@@ -81,11 +81,6 @@ cmd_validate() {
         return 1
     fi
 
-    # Check optional tree-sitter dependency
-    if ! python -c "import tree_sitter" 2>/dev/null; then
-        echo "warn: tree-sitter not installed (AST abstractness detection unavailable; regex fallback will run). Install with: pip install 'aux-skills[query]'" >&2
-    fi
-
     # Delegate to CLI doctor for full dependency check
     aux doctor
 }

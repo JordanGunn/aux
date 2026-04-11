@@ -31,6 +31,17 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-bash" },
+    { name = "tree-sitter-c" },
+    { name = "tree-sitter-cpp" },
+    { name = "tree-sitter-go" },
+    { name = "tree-sitter-java" },
+    { name = "tree-sitter-javascript" },
+    { name = "tree-sitter-python" },
+    { name = "tree-sitter-ruby" },
+    { name = "tree-sitter-rust" },
+    { name = "tree-sitter-typescript" },
 ]
 
 [package.optional-dependencies]
@@ -43,19 +54,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
-]
-query = [
-    { name = "tree-sitter" },
-    { name = "tree-sitter-bash" },
-    { name = "tree-sitter-c" },
-    { name = "tree-sitter-cpp" },
-    { name = "tree-sitter-go" },
-    { name = "tree-sitter-java" },
-    { name = "tree-sitter-javascript" },
-    { name = "tree-sitter-python" },
-    { name = "tree-sitter-ruby" },
-    { name = "tree-sitter-rust" },
-    { name = "tree-sitter-typescript" },
 ]
 
 [package.dev-dependencies]
@@ -72,19 +70,19 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "trafilatura", marker = "extra == 'curl'", specifier = ">=1.9.0" },
-    { name = "tree-sitter", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-bash", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-c", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-cpp", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-go", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-java", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-javascript", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-python", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-ruby", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-rust", marker = "extra == 'query'", specifier = ">=0.21.0" },
-    { name = "tree-sitter-typescript", marker = "extra == 'query'", specifier = ">=0.21.0" },
+    { name = "tree-sitter", specifier = ">=0.21.0" },
+    { name = "tree-sitter-bash", specifier = ">=0.21.0" },
+    { name = "tree-sitter-c", specifier = ">=0.21.0" },
+    { name = "tree-sitter-cpp", specifier = ">=0.21.0" },
+    { name = "tree-sitter-go", specifier = ">=0.21.0" },
+    { name = "tree-sitter-java", specifier = ">=0.21.0" },
+    { name = "tree-sitter-javascript", specifier = ">=0.21.0" },
+    { name = "tree-sitter-python", specifier = ">=0.21.0" },
+    { name = "tree-sitter-ruby", specifier = ">=0.21.0" },
+    { name = "tree-sitter-rust", specifier = ">=0.21.0" },
+    { name = "tree-sitter-typescript", specifier = ">=0.21.0" },
 ]
-provides-extras = ["dev", "query", "curl"]
+provides-extras = ["dev", "curl"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.0.2" }]

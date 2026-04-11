@@ -8,7 +8,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from aux import __version__
-from aux.commands import capabilities, curl, delta, deps, files, find, prune, rename, replace, robert, search, usages
+from aux.commands import capabilities, ccx, ck, curl, delta, deps, files, find, hotspots, prune, rename, replace, robert, search, usages
 from aux.util.doctor import run_doctor
 
 if TYPE_CHECKING:
@@ -30,6 +30,9 @@ Commands:
   deps          Module dependency graph: coupling metrics, cycles, blast radius
   delta         Semantic git diff: files changed + symbols added/removed since a ref
   robert        Robert C. Martin package design metrics (coupling, abstractness, main sequence)
+  ccx           Cyclomatic + Cognitive Complexity per function (McCabe + Campbell)
+  ck            Chidamber & Kemerer class metrics (CBO, DIT, NOC, WMC)
+  hotspots      Churn-weighted complexity hotspots per file (Tornhill-style)
   replace       Replace a string everywhere in a codebase (dry-run + apply)
   rename        Move/rename files or directories (dry-run + apply)
   curl          Agent-optimised HTTP fetch with progressive disclosure
@@ -71,6 +74,9 @@ Environment:
     deps.register_parser(subparsers)
     delta.register_parser(subparsers)
     robert.register_parser(subparsers)
+    ccx.register_parser(subparsers)
+    ck.register_parser(subparsers)
+    hotspots.register_parser(subparsers)
     capabilities.register_parser(subparsers)
 
     # Doctor command

@@ -21,7 +21,7 @@ CAPABILITY: dict = {
         "determine blast radius before changing a module",
     ],
     "requires": ["root"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["usages", "prune"],
     "mutates": False,
     "schema_cmd": "aux deps --schema",

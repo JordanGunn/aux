@@ -203,13 +203,6 @@ def _analyze_symbols(
     max_symbols: int | None,
 ) -> tuple[list[PruneCandidate], int, list[str], bool]:
     """Symbol-scope analysis: find top-level definitions with no external references."""
-    try:
-        import tree_sitter  # noqa: F401
-    except ImportError:
-        return [], 0, [
-            "tree-sitter not installed — install 'aux-skills[query]' or use --scope files"
-        ], False
-
     from aux.kernels.query import query_kernel
     from aux.kernels.usages import DEFINITION_QUERIES
     from aux.util.treesitter import detect_language

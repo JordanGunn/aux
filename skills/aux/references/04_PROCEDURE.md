@@ -99,7 +99,7 @@ aux rename old_class.py new_class.py --apply
       "category": "analysis",
       "intent_signals": ["..."],
       "requires": ["root", "symbol"],
-      "optional_deps": ["tree-sitter"],
+      "optional_deps": [],
       "compose_with": ["replace", "rename"],
       "mutates": false,
       "schema_cmd": "aux usages --schema"

@@ -56,17 +56,6 @@ def query_kernel(
     Returns:
         QueryResult with all matches and aggregate counts.
     """
-    try:
-        import tree_sitter  # noqa: F401
-    except ImportError:
-        return QueryResult(
-            matches=[],
-            files_searched=0,
-            files_with_matches=0,
-            total_matches=0,
-            errors=["tree-sitter not installed — run: pip install 'aux-skills[query]'"],
-        )
-
     all_matches: list[AstMatch] = []
     errors: list[str] = []
     files_with_matches = 0

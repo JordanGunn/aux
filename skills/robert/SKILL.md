@@ -5,7 +5,8 @@ description: >
   Robert C. Martin package design metrics skill. Computes coupling (Ca/Ce/I),
   abstractness (Na/Nc/A), and distance from the main sequence (D') per package.
   Classifies packages into zones: pain, uselessness, warning, clean, ok.
-  Read-only. Tree-sitter is optional — text-tier regex fallback always runs.
+  Read-only. AST abstractness detection via tree-sitter is the default; a
+  text-tier regex fallback runs when AST extraction fails for a specific file.
 metadata:
   author: Jordan Godau
   version: 0.1.0

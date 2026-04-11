@@ -87,12 +87,6 @@ cmd_validate() {
         return 1
     fi
 
-    # Check optional tree-sitter dependency (required for symbols scope)
-    if ! python -c "import tree_sitter" 2>/dev/null; then
-        echo "warn: tree-sitter not installed (symbols scope unavailable). Install with: pip install 'aux-skills[query]'" >&2
-        echo "warn: use --scope files for text-only analysis without tree-sitter" >&2
-    fi
-
     # Delegate to CLI doctor for full dependency check
     aux doctor
 }

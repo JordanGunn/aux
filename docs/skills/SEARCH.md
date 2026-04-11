@@ -23,12 +23,11 @@ without modifying any files.
 ## Prerequisites
 
 ```bash
-# For tier 1+2 only (default):
-aux doctor   # verify fd + rg are available
-
-# For tier 3 (tree-sitter):
-pip install 'aux-skills[query]'
+aux doctor   # verify fd, rg, and tree-sitter are available
 ```
+
+Tree-sitter (used by tier 3) is bundled with `aux-skills`. Only `fd` and `rg` are
+external system tools that need to be present on PATH.
 
 ## Usage
 

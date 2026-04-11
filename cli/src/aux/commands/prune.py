@@ -21,7 +21,7 @@ CAPABILITY: dict = {
         "identify candidates for deletion before cleanup",
     ],
     "requires": ["root"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["usages", "replace"],
     "mutates": False,
     "schema_cmd": "aux prune --schema",

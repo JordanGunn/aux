@@ -9,23 +9,19 @@ Symbol cross-reference skill. Returns all definition locations and all reference
 **Execution pipeline:**
 1. `fd` — enumerate candidate files by glob
 2. `rg` (fixed-string) — exhaustive text matches across all files
-3. tree-sitter (optional) — tag definition entries with `symbol_type`
+3. tree-sitter — tag definition entries with `symbol_type`
 4. Correlation — definitions and references separated in one result
 
 **Key properties:**
 - Read-only — no filesystem writes under any circumstances
 - Deterministic — same plan JSON produces same output
-- Tree-sitter optional — without it, all matches are tagged `"reference"` (still complete)
+- Tree-sitter is a bundled core dependency — definition tagging is always available
 - Language-agnostic text phase — works on any file type
 
 ## Prerequisites
 
 ```bash
-# Core (required)
-pip install aux-skills
-
-# Definition tagging (optional but recommended)
-pip install 'aux-skills[query]'
+pip install aux-skills   # tree-sitter is bundled — definition tagging works out of the box
 ```
 
 ## Usage

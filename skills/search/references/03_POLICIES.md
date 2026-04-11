@@ -18,7 +18,6 @@ The agent MUST:
 - Use the scripts for all execution (never raw shell)
 - Stop if schema validation fails
 - Treat zero matches as a valid, reportable result — not an error
-- Install tree-sitter extras before using tier 3: `pip install 'aux-skills[query]'`
 - **Use `result_mode: "files"` for broad discovery passes** — when the goal is routing
   (which files contain the pattern?), not content. Switch to `"matches"` or targeted
   reads only after shortlisting relevant files.

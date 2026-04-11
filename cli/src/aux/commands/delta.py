@@ -21,7 +21,7 @@ CAPABILITY: dict = {
         "semantic diff beyond line counts",
     ],
     "requires": ["root"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["usages", "deps"],
     "mutates": False,
     "schema_cmd": "aux delta --schema",
@@ -39,9 +39,9 @@ Compute semantic changes between two git refs (or vs. working tree).
 Pipeline:
   git diff --name-status  → changed file list
   git diff --numstat      → line addition/deletion counts
-  tree-sitter (optional)  → symbol-level diff (added/removed/unchanged)
+  tree-sitter             → symbol-level diff (added/removed/unchanged)
 
-When tree-sitter is unavailable, falls back to stat-only mode automatically.
+Pass --stat-only to skip the symbol-level diff and return file/line stats only.
 
 Simple usage:
   aux delta --root /path                          # vs working tree (HEAD)

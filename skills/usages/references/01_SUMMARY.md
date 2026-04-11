@@ -24,11 +24,11 @@ It is the O(1) cross-reference primitive that write skills use for impact analys
 The execution pipeline:
 1. `find_kernel` (fd) — enumerate candidate files by glob
 2. `grep_kernel` (rg, fixed-string) — exhaustive text matches (all refs + defs)
-3. `query_kernel` (tree-sitter, optional) — definition tagging with symbol_type
+3. `query_kernel` (tree-sitter) — definition tagging with symbol_type
 4. Correlation — grep matches enriched with definition metadata from AST
 
-Supported definition languages (requires tree-sitter grammars): Python, JavaScript,
-TypeScript, Go, Rust, Java.
+Supported definition languages: Python, JavaScript, TypeScript, Go, Rust, Java.
+(Tree-sitter and grammars are bundled core dependencies of `aux-skills`.)
 
 ## Constraints
 

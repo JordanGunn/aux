@@ -26,7 +26,7 @@ by **9–46%** while maintaining or improving output quality.
 | Semantic git diff | `delta` | +8%‡ | **−71%** | Haiku 4.5 |
 
 > † `aux deps` produced correct coupling values where manual analysis made computation errors.
-> ‡ stat-only fallback (no tree-sitter); token overhead from verbose JSON vs compact git text. Install tree-sitter for semantic symbol output.
+> ‡ Benchmark snapshot ran with the historical stat-only fallback (tree-sitter not installed). Tree-sitter is now bundled, so semantic symbol output is the default.
 
 **Cross-model**: GPT-5.2 Medium + AUx reduces total context cost to **~0.64×** baseline.
 GPT-5.2 Low + AUx achieves comparable quality at **~0.35×** baseline cost.
@@ -130,7 +130,7 @@ output/               → format_output(), TTY detection, truncation
 | `rg` (ripgrep) | `search`, `usages`, `prune`, `replace` |
 | `fd` / `fdfind` | `files`, `search`, `prune`, `deps`, `rename` |
 | `git` | `delta` |
-| `tree-sitter` | semantic mode for `find`, `usages`, `prune`, `delta` (optional) |
+| `tree-sitter` | `find`, `usages`, `prune`, `delta`, `deps`, `robert` (bundled core dependency) |
 | `httpx` | `curl` (optional; install `aux-skills[curl]`) |
 
 Run `aux doctor` to check availability.

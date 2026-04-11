@@ -87,7 +87,7 @@ fi
 
 # Install as a tool using uv (creates isolated environment)
 cd "$CLI_DIR"
-uv tool install --editable ".[query,curl,dev]" --force --quiet
+uv tool install --editable ".[curl,dev]" --force --quiet
 
 echo "  ✓ aux CLI installed (via uv tool)"
 echo

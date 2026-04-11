@@ -1,12 +1,15 @@
 """Plan schemas and validation for aux commands."""
 
 from aux.plans.schemas import (
+    CcxPlan,
+    CkPlan,
     CurlPlan,
     DeltaPlan,
     DepsPlan,
     FilesPlan,
     FindPlan,
     GrepPlan,
+    HotspotsPlan,
     MovePair,
     Pattern,
     PrunePlan,
@@ -25,12 +28,15 @@ from aux.plans.schemas import (
 from aux.plans.validate import get_schema, parse_plan, validate_plan
 
 __all__ = [
+    "CcxPlan",
+    "CkPlan",
     "CurlPlan",
     "DeltaPlan",
     "DepsPlan",
     "FilesPlan",
     "FindPlan",
     "GrepPlan",
+    "HotspotsPlan",
     "MovePair",
     "Pattern",
     "PrunePlan",

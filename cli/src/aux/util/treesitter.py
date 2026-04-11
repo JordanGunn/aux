@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
+
+import tree_sitter
 
 # Language name → tree-sitter package name
 GRAMMAR_MAP: dict[str, str] = {
@@ -57,7 +60,14 @@ def detect_language(path: Path, override: str | None = None) -> str | None:
 
 
 def load_language(name: str) -> object | None:
-    """Load and cache a tree-sitter Language for the given language name."""
+    """Load and cache a tree-sitter Language for the given language name.
+
+    Most tree-sitter language packages export a top-level ``language()`` factory.
+    Some packages with multiple grammars (notably ``tree_sitter_typescript``,
+    which ships ``language_typescript()`` and ``language_tsx()``) use a
+    package-suffixed name instead. Try the standard form first, then fall back
+    to ``language_<name>``.
+    """
     if name in _LANGUAGE_CACHE:
         return _LANGUAGE_CACHE[name]
 
@@ -66,12 +76,15 @@ def load_language(name: str) -> object | None:
         return None
 
     try:
-        import importlib
-
-        import tree_sitter
-
         mod = importlib.import_module(pkg_name)
-        raw = mod.language()
+        factory = None
+        for candidate in ("language", f"language_{name}"):
+            if hasattr(mod, candidate):
+                factory = getattr(mod, candidate)
+                break
+        if factory is None:
+            return None
+        raw = factory()
         if isinstance(raw, tree_sitter.Language):
             lang = raw
         else:

@@ -20,7 +20,7 @@ CAPABILITY: dict = {
         "locate class definitions or imports by syntax",
     ],
     "requires": ["query"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["usages", "search"],
     "mutates": False,
     "schema_cmd": "aux find --schema",
@@ -243,5 +243,4 @@ def _list_languages() -> dict:
     return {
         "available": available,
         "unavailable": unavailable,
-        "install": "pip install 'aux-skills[query]'",
     }

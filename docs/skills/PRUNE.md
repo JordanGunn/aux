@@ -85,12 +85,14 @@ aux prune --schema
 
 ## Scopes
 
-| Scope | Method | Requires |
-|-------|--------|----------|
-| `symbols` | Tree-sitter AST extraction of top-level definitions | `aux-skills[query]` |
-| `files` | Stem-matching across module files | Nothing extra |
+| Scope | Method |
+|-------|--------|
+| `symbols` | Tree-sitter AST extraction of top-level definitions |
+| `files` | Stem-matching across module files |
 
-Default scope is `["symbols"]`. Use `--scope files` as a fallback when tree-sitter is unavailable.
+Default scope is `["symbols"]`. Tree-sitter is a core dependency of `aux-skills`, so
+both scopes are always available; `--scope files` exists for cheap, language-agnostic
+audits where AST work would be overkill.
 
 ---
 

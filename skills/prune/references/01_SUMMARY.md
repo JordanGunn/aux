@@ -27,8 +27,7 @@ reading the code, and human judgment about dynamic dispatch, reflection, and plu
 
 Two scopes are available:
 - `symbols`: tree-sitter AST extraction of top-level functions, classes, interfaces, and types
-  (requires `aux-skills[query]`)
-- `files`: text-only stem-matching for module files (no tree-sitter required)
+- `files`: text-only stem-matching for module files (cheaper, language-agnostic)
 
 Default scope is `["symbols"]`.
 

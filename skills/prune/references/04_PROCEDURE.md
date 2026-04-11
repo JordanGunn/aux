@@ -26,10 +26,9 @@ index:
 bash scripts/skill.sh validate
 ```
 
-If tree-sitter is absent and scope includes `"symbols"`:
-- Report the missing dependency
-- Offer to run `scope=["files"]` as a fallback (text-only, no tree-sitter required)
-- Suggest: `pip install 'aux-skills[query]'`
+Tree-sitter is a core dependency of `aux-skills`, so both scopes are always available.
+If `aux doctor` reports `ok: false` for tree-sitter, the install is broken — re-run
+`scripts/install.sh` rather than falling back.
 
 Get the current schema (source of truth for plan structure):
 ```bash
@@ -40,7 +39,7 @@ bash scripts/skill.sh schema
 ## Step 3: Build prune plan
 
 - Run `aux prune --schema` to confirm field names
-- Choose `scope`: `["symbols"]` (default, requires tree-sitter) or `["files"]` (text-only)
+- Choose `scope`: `["symbols"]` (default, AST-based) or `["files"]` (text-only stem-matching)
   or both
 - Set `globs` to target the relevant file types
 - Set `min_name_length` if the default (4) is too permissive or too restrictive

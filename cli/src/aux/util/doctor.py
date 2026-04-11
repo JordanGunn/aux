@@ -29,13 +29,16 @@ OPTIONAL_TOOLS = {
     },
 }
 
-OPTIONAL_PYTHON_PACKAGES = {
+REQUIRED_PYTHON_PACKAGES = {
     "tree_sitter": {
         "name": "tree-sitter",
-        "install": "pip install 'aux-skills[query]'",
-        "commands": ["sed (query mode)", "query"],
+        "install": "pip install aux-skills",
+        "commands": ["find", "usages", "deps", "delta", "prune", "robert", "search (--query)"],
         "description": "AST-aware structural search and substitution",
     },
+}
+
+OPTIONAL_PYTHON_PACKAGES = {
     "httpx": {
         "name": "httpx",
         "install": "pip install 'aux-skills[curl]'",
@@ -108,7 +111,7 @@ def check_tool(name: str) -> dict:
 
 
 def check_python_package(name: str) -> dict:
-    """Check if an optional Python package is importable.
+    """Check if a Python package (required or optional) is importable.
 
     Args:
         name: Import name of the package (e.g. "tree_sitter")
@@ -116,7 +119,9 @@ def check_python_package(name: str) -> dict:
     Returns:
         Dict with availability info
     """
-    info = OPTIONAL_PYTHON_PACKAGES.get(name, {"name": name, "install": "pip install " + name})
+    info = REQUIRED_PYTHON_PACKAGES.get(name) or OPTIONAL_PYTHON_PACKAGES.get(
+        name, {"name": name, "install": "pip install " + name}
+    )
 
     try:
         mod = importlib.import_module(name)
@@ -173,8 +178,16 @@ def run_doctor() -> dict:
         }
 
     python_packages = {}
+    for pkg_name in REQUIRED_PYTHON_PACKAGES:
+        check = check_python_package(pkg_name)
+        python_packages[pkg_name] = check
+        if not check["available"]:
+            all_ok = False
+
     for pkg_name in OPTIONAL_PYTHON_PACKAGES:
-        python_packages[pkg_name] = check_python_package(pkg_name)
+        check = check_python_package(pkg_name)
+        check["optional"] = True
+        python_packages[pkg_name] = check
 
     return {
         "ok": all_ok,

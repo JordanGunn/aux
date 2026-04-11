@@ -49,7 +49,7 @@ aux capabilities --format names
         "locate where a symbol is defined across a codebase"
       ],
       "requires": ["root", "symbol"],
-      "optional_deps": ["tree-sitter"],
+      "optional_deps": [],
       "compose_with": ["replace", "rename"],
       "mutates": false,
       "schema_cmd": "aux usages --schema"

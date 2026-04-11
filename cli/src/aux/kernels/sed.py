@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from aux.plans.schemas import QueryReplacement, SedPlan, TextReplacement
 
+import tree_sitter
+
 from aux.util.treesitter import detect_language as _detect_language
 from aux.util.treesitter import extract_captures as _ts_extract_captures
 from aux.util.treesitter import load_language as _load_language
@@ -224,12 +226,6 @@ def _apply_query(
     Returns (new_content, list[SedChange]).
     On grammar error, returns (original_content, []) — caller stores error.
     """
-    try:
-        import tree_sitter  # noqa: F401
-    except ImportError:
-        # tree-sitter not installed — return unchanged with empty changes
-        return content, []
-
     # Resolve language
     language_name = _detect_language(path, op.language)
 
@@ -241,8 +237,6 @@ def _apply_query(
         return content, []
 
     try:
-        import tree_sitter
-
         parser = tree_sitter.Parser(lang)
         tree = parser.parse(content.encode(errors="replace"))
 

@@ -27,16 +27,18 @@ delta MUST:
 - Report `truncated: true` when max_files cap is applied
 - Use working tree content (Path.read_text) when ref_to is None (working tree mode)
 
-## Degradation chain
+## Modes
 
-delta implements a graceful three-tier degradation:
+delta supports two modes, both gated on git being available:
 
-1. **Full semantic mode** (git + tree-sitter both available):
+1. **Full semantic mode** (default, requires git):
    - File list + line stats + symbol diff (added/removed/unchanged)
+   - Tree-sitter is a bundled core dependency, so this mode always runs unless
+     the caller explicitly opts out.
 
-2. **Stat-only mode** (git available, tree-sitter absent):
+2. **Stat-only mode** (`stat_only=true`):
    - File list + line stats only; symbols=null per file
-   - Warn: "tree-sitter not installed — falling back to stat-only mode"
+   - Use when only file-level churn matters and symbol analysis would be wasted work.
 
 3. **Error mode** (git unavailable):
    - Return empty DeltaResult with error: "git not found"

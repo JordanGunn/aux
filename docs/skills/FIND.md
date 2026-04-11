@@ -14,9 +14,12 @@ Read-only tree-sitter structural search. Executes AST queries over a codebase an
 
 ## Prerequisites
 
+Tree-sitter and the bundled grammar packages are core dependencies of `aux-skills` —
+no extras are required.
+
 ```bash
-pip install 'aux-skills[query]'   # installs tree-sitter + grammar packages
-aux find --languages               # verify which grammars are available
+aux doctor              # confirm tree-sitter is available
+aux find --languages    # list which grammars are loaded
 ```
 
 ## Usage
@@ -51,9 +54,8 @@ aux find --languages
 Output:
 ```json
 {
-  "available": ["python", "javascript", "typescript"],
-  "unavailable": ["rust", "go"],
-  "install": "pip install 'aux-skills[query]'"
+  "available": ["bash", "c", "cpp", "go", "java", "javascript", "python", "ruby", "rust", "typescript"],
+  "unavailable": []
 }
 ```
 

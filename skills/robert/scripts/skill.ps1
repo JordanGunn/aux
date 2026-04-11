@@ -45,12 +45,6 @@ function Test-Validate {
         exit 1
     }
 
-    # Check optional tree-sitter dependency
-    $tsCheck = python -c "import tree_sitter" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "warn: tree-sitter not installed (AST abstractness detection unavailable; regex fallback will run). Install with: pip install 'aux-skills[query]'"
-    }
-
     # Delegate to CLI doctor for full dependency check
     & aux doctor
 }

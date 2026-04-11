@@ -4,8 +4,9 @@ license: MIT
 description: >
   Module dependency graph skill. Builds an import graph from source files,
   computes per-file coupling metrics (afferent Ca, efferent Ce, instability),
-  and detects import cycles. Read-only. Tree-sitter is optional — text-tier
-  regex fallback always runs.
+  and detects import cycles. Read-only. AST extraction via tree-sitter is the
+  default; a text-tier regex fallback runs when AST extraction is unavailable
+  for a specific file.
 metadata:
   author: Jordan Godau
   version: 0.1.0

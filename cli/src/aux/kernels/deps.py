@@ -249,7 +249,6 @@ def _extract_all_imports(
     """
     edges_by_file: dict[str, list[ImportEdge]] = {str(fp): [] for fp in file_paths}
     errors: list[str] = []
-    ts_available = _treesitter_available()
 
     for fp in file_paths:
         fp_str = str(fp)
@@ -258,7 +257,7 @@ def _extract_all_imports(
             continue
 
         extracted = False
-        if ts_available and lang in IMPORT_QUERIES:
+        if lang in IMPORT_QUERIES:
             try:
                 edges = _extract_imports_ast(fp, lang)
                 edges_by_file[fp_str] = edges
@@ -444,10 +443,3 @@ def _detect_file_language(fp: Path) -> str | None:
     return ext_map.get(ext)
 
 
-def _treesitter_available() -> bool:
-    """Check if tree-sitter is importable."""
-    try:
-        import tree_sitter  # noqa: F401
-        return True
-    except ImportError:
-        return False

@@ -39,6 +39,7 @@ TypeScript, Go, Rust, Java.
 Execution is deterministic and reproducible for a given plan JSON.
 Read-only — no file writes occur under any circumstances.
 Git must be available; if absent, an error is returned immediately.
-Tree-sitter is optional — without it, stat-only mode runs automatically.
+Tree-sitter is a bundled core dependency; semantic symbol diff is the default.
+Pass `stat_only=true` to skip symbol-level analysis when only file/line stats are needed.
 Symbol diff semantics are conservative: only name+type presence is compared.
 A function renamed (same body) appears as one removed + one added symbol.

@@ -1,0 +1,53 @@
+aux-skills — Agentic Unix Skills CLI
+Copyright 2025 Jordan Godau
+
+This product implements established software metrics from the following
+published research. These metrics are mathematical formulas computed from
+source code structure; aux-skills implements them independently via
+tree-sitter AST traversal. No code from the original authors'
+implementations is used.
+
+ACADEMIC CITATIONS
+==================
+
+Cyclomatic Complexity (aux ccx)
+  McCabe, T.J. (1976). "A Complexity Measure." IEEE Transactions on
+  Software Engineering, SE-2(4), 308-320.
+
+Cognitive Complexity (aux ccx)
+  Campbell, G.A. (2018). "Cognitive Complexity: A new way of measuring
+  understandability." SonarSource SA. Technical report.
+
+Chidamber & Kemerer Object-Oriented Metrics (aux ck)
+  Chidamber, S.R. & Kemerer, C.F. (1994). "A Metrics Suite for Object
+  Oriented Design." IEEE Transactions on Software Engineering, 20(6),
+  476-493.
+
+  Metrics implemented: CBO (Coupling Between Object Classes), DIT (Depth
+  of Inheritance Tree), NOC (Number of Children), WMC (Weighted Methods
+  per Class).
+
+Distance from the Main Sequence (aux robert)
+  Martin, R.C. (1994). "OO Design Quality Metrics: An Analysis of
+  Dependencies." Proceedings of Workshop Pragmatic and Theoretical
+  Directions in Object-Oriented Software Metrics, OOPSLA '94.
+
+  Martin, R.C. (2002). "Agile Software Development: Principles, Patterns,
+  and Practices." Prentice Hall. Chapter 20: Principles of Package Design.
+
+  Metrics implemented: Afferent Coupling (Ca), Efferent Coupling (Ce),
+  Instability (I), Abstractness (A), Distance from the Main Sequence (D').
+
+Hotspot Analysis (aux hotspots)
+  Tornhill, A. (2015). "Your Code as a Crime Scene: Use Forensic
+  Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
+  Programs." Pragmatic Bookshelf.
+
+Dependency Cycle Detection (aux deps)
+  Tarjan, R.E. (1972). "Depth-First Search and Linear Graph Algorithms."
+  SIAM Journal on Computing, 1(2), 146-160.
+
+Information Flow Complexity (historical reference)
+  Henry, S. & Kafura, D. (1981). "Software Structure Metrics Based on
+  Information Flow." IEEE Transactions on Software Engineering, SE-7(5),
+  510-518.

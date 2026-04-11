@@ -106,4 +106,4 @@ search result token cost by 90%+ on broad patterns.
 - **Explicit scope:** Declare `root`, globs, and excludes in both surface and search.
 - **Absence is data:** Zero matches must be reported with full plan context.
 - **Read-only:** search never modifies files.
-- **Tier 3 requires tree-sitter:** Install with `pip install 'aux-skills[query]'`.
+- **Tier 3 uses tree-sitter:** bundled with `aux-skills` — no extra install step.

@@ -329,11 +329,10 @@ def _compute_abstractness(
     """
     errors: list[str] = []
 
-    if _treesitter_available():
-        try:
-            return _compute_abstractness_ast(pkg_files, language, errors)
-        except Exception as e:
-            errors.append(f"AST abstractness failed, using regex fallback: {e}")
+    try:
+        return _compute_abstractness_ast(pkg_files, language, errors)
+    except Exception as e:
+        errors.append(f"AST abstractness failed, using regex fallback: {e}")
 
     return _compute_abstractness_text(pkg_files, language, errors)
 
@@ -570,10 +569,3 @@ def _relative_path(root: Path, path: Path) -> str:
         return str(path)
 
 
-def _treesitter_available() -> bool:
-    """Check if tree-sitter is importable."""
-    try:
-        import tree_sitter  # noqa: F401
-        return True
-    except ImportError:
-        return False

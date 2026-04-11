@@ -8,11 +8,14 @@ from typing import TypeVar
 from pydantic import BaseModel, ValidationError
 
 from aux.plans.schemas import (
+    CcxPlan,
+    CkPlan,
     CurlPlan,
     DeltaPlan,
     DepsPlan,
     FilesPlan,
     FindPlan,
+    HotspotsPlan,
     PrunePlan,
     RenamePlan,
     ReplacePlan,
@@ -35,6 +38,9 @@ PLAN_TYPES: dict[str, type[BaseModel]] = {
     "deps": DepsPlan,
     "delta": DeltaPlan,
     "robert": RobertPlan,
+    "ccx": CcxPlan,
+    "ck": CkPlan,
+    "hotspots": HotspotsPlan,
 }
 
 

@@ -97,7 +97,7 @@ if (-not (Test-Path $pyproject)) {
 # Install as a tool using uv (creates isolated environment)
 Push-Location $CliDir
 try {
-    & uv tool install --editable ".[query,curl,dev]" --force --quiet
+    & uv tool install --editable ".[curl,dev]" --force --quiet
 } finally {
     Pop-Location
 }

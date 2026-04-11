@@ -20,17 +20,15 @@ index:
 
 ## Step 2: Check prerequisites
 
-Verify grammar is available for the target language:
+Tree-sitter and the bundled grammars are core dependencies of `aux-skills`. Verify
+the install is healthy and confirm which grammars are loaded for the target language:
 
 ```bash
 bash scripts/skill.sh validate
 aux find --languages
 ```
 
-If the grammar is unavailable, report this and suggest:
-```
-pip install 'aux-skills[query]'
-```
+If the grammar is missing, the install is broken — re-run `scripts/install.sh`.
 
 Get the current schema (source of truth for plan structure):
 ```bash

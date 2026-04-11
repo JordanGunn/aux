@@ -26,7 +26,7 @@ class FileDelta:
     status: str             # "modified" | "added" | "deleted" | "renamed"
     additions: int          # raw git line additions
     deletions: int          # raw git line deletions
-    symbols: SymbolDiff | None   # None if stat_only or tree-sitter absent
+    symbols: SymbolDiff | None   # None if stat_only mode
 
 
 @dataclass
@@ -115,13 +115,8 @@ def delta_kernel(
     ns_stat = run_tool(numstat_cmd, cwd=root)
     stat_map = _parse_numstat(ns_stat.stdout) if ns_stat.ok else {}
 
-    # Determine if semantic analysis is possible
-    ts_available = _treesitter_available()
+    # Determine if semantic analysis is requested
     do_semantic = semantic and not stat_only
-    if do_semantic and not ts_available:
-        errors.append("tree-sitter not installed — falling back to stat-only mode. "
-                      "Install with: pip install 'aux-skills[query]'")
-        do_semantic = False
 
     # Cap files
     truncated = False
@@ -396,12 +391,3 @@ def _detect_file_language(fp: Path) -> str | None:
         ".java": "java",
     }
     return ext_map.get(ext)
-
-
-def _treesitter_available() -> bool:
-    """Check if tree-sitter is importable."""
-    try:
-        import tree_sitter  # noqa: F401
-        return True
-    except ImportError:
-        return False

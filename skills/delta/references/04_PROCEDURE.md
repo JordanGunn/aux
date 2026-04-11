@@ -61,7 +61,7 @@ aux delta --schema
 - `files[]` — FileDelta per changed file
   - `status` — "modified" | "added" | "deleted" | "renamed"
   - `additions` / `deletions` — raw git line counts
-  - `symbols` — SymbolDiff or null (null if stat_only or tree-sitter absent)
+  - `symbols` — SymbolDiff or null (null when stat_only=true)
     - `added` — list of {name, type} new in ref_to
     - `removed` — list of {name, type} present in ref_from, gone in ref_to
     - `unchanged` — list of {name, type} present in both

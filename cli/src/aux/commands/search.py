@@ -22,7 +22,7 @@ CAPABILITY: dict = {
         "three-tier hierarchical search with surface and content filters",
     ],
     "requires": ["root", "surface", "search"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["find", "usages"],
     "mutates": False,
     "schema_cmd": "aux search --schema",
@@ -39,7 +39,7 @@ Three-tier hierarchical search pipeline:
 
   Tier 1 (fd)           Surface reduction — enumerate files by name/glob
   Tier 2 (rg)           Content match    — grep patterns across tier-1 files
-  Tier 3 (tree-sitter)  Structure match  — AST query across tier-2 files (optional)
+  Tier 3 (tree-sitter)  Structure match  — AST query across tier-2 files (opt-in)
 
 Usage:
   aux search --plan '<json>'

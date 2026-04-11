@@ -21,7 +21,7 @@ CAPABILITY: dict = {
         "locate where a symbol is defined across a codebase",
     ],
     "requires": ["root", "symbol"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["replace", "rename"],
     "mutates": False,
     "schema_cmd": "aux usages --schema",
@@ -38,7 +38,8 @@ Find all definitions and references of a symbol across a codebase.
 
 Uses ripgrep for exhaustive text matches (language-agnostic), enriched by
 tree-sitter AST queries to tag definition entries with symbol_type.
-Tree-sitter is optional — without it all matches are tagged "reference".
+Tree-sitter is a bundled core dependency, so definition tagging is always
+available for supported languages.
 
 Simple usage:
   aux usages DataProcessor --root /path --glob "**/*.py"

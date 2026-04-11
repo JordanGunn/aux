@@ -24,7 +24,7 @@ CAPABILITY: dict = {
         "assess structural brittleness before a refactor",
     ],
     "requires": ["root", "language"],
-    "optional_deps": ["tree-sitter"],
+    "optional_deps": [],
     "compose_with": ["deps", "usages", "find"],
     "mutates": False,
     "schema_cmd": "aux robert --schema",

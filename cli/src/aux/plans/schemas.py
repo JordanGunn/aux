@@ -331,6 +331,82 @@ class RobertPlan(BaseModel):
     )
 
 
+class CcxPlan(BaseModel):
+    """Plan schema for ccx command (cyclomatic + cognitive complexity)."""
+
+    root: str = Field(..., description="Search root directory")
+    languages: list[str] = Field(
+        default_factory=list,
+        description="Subset of supported languages to analyze (empty = all supported)",
+    )
+    globs: list[str] = Field(
+        default_factory=list,
+        description="Override include globs (otherwise derived from languages)",
+    )
+    excludes: list[str] = Field(default_factory=list, description="Exclude globs")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    max_results: int | None = Field(
+        default=None, ge=1, description="Cap on functions in output (post-sort)"
+    )
+    min_ccx: int = Field(
+        default=1, ge=1, description="Filter — only return functions with ccx >= this value"
+    )
+
+
+class CkPlan(BaseModel):
+    """Plan schema for ck command (Chidamber & Kemerer class metrics)."""
+
+    root: str = Field(..., description="Search root directory")
+    languages: list[str] = Field(
+        default_factory=list,
+        description="Subset of supported languages to analyze (empty = all supported)",
+    )
+    globs: list[str] = Field(default_factory=list, description="Override include globs")
+    excludes: list[str] = Field(default_factory=list, description="Exclude globs")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    max_results: int | None = Field(
+        default=None, ge=1, description="Cap on classes in output"
+    )
+
+
+class HotspotsPlan(BaseModel):
+    """Plan schema for hotspots command (churn-weighted complexity)."""
+
+    root: str = Field(
+        ...,
+        description="Repository root (can be a subdirectory of the git repo)",
+    )
+    globs: list[str] = Field(default_factory=list, description="File patterns to include")
+    excludes: list[str] = Field(default_factory=list, description="File patterns to exclude")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    since: str | None = Field(
+        default="90 days ago",
+        description=(
+            "Git log window start (git-style: '90 days ago', '2025-01-01', "
+            "'all'/'unbounded' for full history). Default is 90d — tighter than "
+            "Tornhill's canonical 1yr to match the steeper curve of agentic "
+            "smell accumulation. Unbounded windows can be a perf footgun on "
+            "large repos."
+        ),
+    )
+    until: str | None = Field(default=None, description="Git log window end")
+    min_commits: int = Field(
+        default=2, ge=1, description="Minimum commit count to include a file"
+    )
+    max_results: int | None = Field(
+        default=None, ge=1, description="Cap the ranked result list (post-sort)"
+    )
+    hotspot_percentile: float = Field(
+        default=0.75,
+        ge=0.5,
+        le=0.99,
+        description="Percentile cutoff for hotspot quadrant classification",
+    )
+
+
 class CurlPlan(BaseModel):
     """Plan schema for curl command (agent-optimised HTTP fetch with progressive disclosure)."""
 
