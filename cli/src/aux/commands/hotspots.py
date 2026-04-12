@@ -13,10 +13,10 @@ from aux.plans import HotspotsPlan, parse_plan
 CAPABILITY: dict = {
     "name": "hotspots",
     "description": (
-        "Churn-weighted complexity hotspots per file: sum_ccx × change_freq. "
-        "Composes ccx (complexity) with git log (change history) and classifies "
-        "files into Tornhill quadrants. Defaults to the last 90 days — tighter "
-        "than Tornhill's 1yr to match the steeper curve of agentic rot."
+        "Growth-weighted complexity hotspots per file: sum_ccx × loc_delta. "
+        "Composes ccx (complexity) with git log --numstat (LOC change volume) "
+        "and classifies files into Tornhill quadrants. Defaults to the last "
+        "14 days — tuned for agentic code generation."
     ),
     "category": "analysis",
     "intent_signals": [
@@ -40,21 +40,21 @@ def register_parser(subparsers: argparse._SubParsersAction) -> None:
         "hotspots",
         help="Churn-weighted complexity hotspots per file (Tornhill-style)",
         description="""
-Compute churn-weighted complexity hotspots per file. Composes `ccx`
-(Cyclomatic Complexity) with `git log` (change frequency) to rank files by
-Tornhill-style hotspot score (sum_ccx × change_freq). Files are classified
-into four quadrants based on 75th-percentile cutoffs on both axes.
+Compute growth-weighted complexity hotspots per file. Composes `ccx`
+(Cyclomatic Complexity) with `git log --numstat` (LOC change volume) to
+rank files by hotspot score (sum_ccx × max(0, net LOC delta)). Files are
+classified into four quadrants based on 75th-percentile cutoffs on both axes.
 
 Quadrants:
-  hotspot           High complexity AND high churn — prime refactor target
-  stable_complex    High complexity, low churn — legacy, touch with care
-  churning_simple   Low complexity, high churn — hot path but safe
+  hotspot           High complexity AND high growth — prime refactor target
+  stable_complex    High complexity, low growth — legacy, touch with care
+  churning_simple   Low complexity, high growth — fast-growing but safe
   calm              Low on both — uninteresting
   insufficient_data Set too small (<8 files) for percentile classification
 
-Default time window is 90 days — tighter than Tornhill's canonical 1 year
-because agentic code rot accumulates on a steeper curve. Override with
---since "2020-01-01" or --since "1 year ago" or --since all for unbounded.
+Default time window is 14 days — tuned for agentic code generation where
+architectural damage from file growth accumulates in days, not months.
+Override with --since "90 days ago" or --since all for unbounded.
 
 Language coverage inherits from `ccx` (python, javascript, typescript, go,
 rust, java). Files in unsupported languages are excluded from the ranking.
@@ -108,11 +108,11 @@ Schema:
     parser.add_argument(
         "--since",
         type=str,
-        default="90 days ago",
+        default="14 days ago",
         metavar="SPEC",
         help=(
-            "Git log window start (default: '90 days ago'). Git-style: "
-            "'30 days ago', '2025-01-01', '1 year ago', or 'all' for unbounded."
+            "Git log window start (default: '14 days ago'). Git-style: "
+            "'90 days ago', '2025-01-01', '1 year ago', or 'all' for unbounded."
         ),
     )
     parser.add_argument(
@@ -249,7 +249,10 @@ def _format_result(result: HotspotsResult) -> dict:
                 "language": h.language,
                 "sum_ccx": h.sum_ccx,
                 "max_ccx": h.max_ccx,
-                "change_freq": h.change_freq,
+                "loc_delta": h.loc_delta,
+                "loc_insertions": h.loc_insertions,
+                "loc_deletions": h.loc_deletions,
+                "commit_count": h.commit_count,
                 "first_seen": h.first_seen,
                 "last_seen": h.last_seen,
                 "hotspot_score": round(h.hotspot_score, 2),

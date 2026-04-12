@@ -1,9 +1,13 @@
 """Git log primitive for AUx.
 
-Provides a shared git-history walker used by history-aware skills (currently
-hotspots; future: change coupling, ownership churn). Placed in util/ because
-it is a primitive — it does not emit AUx-shaped result objects, it just walks
-`git log` and returns per-commit records.
+Provides shared git-history walkers used by history-aware skills (hotspots,
+future: change coupling, ownership churn). Placed in util/ because these are
+primitives — they do not emit AUx-shaped result objects, they just walk
+`git log` and return per-commit records.
+
+Two flavours:
+    ``git_log_file_changes``  — ``--name-only``, returns file names per commit.
+    ``git_log_numstat``       — ``--numstat``, returns per-file insertions/deletions.
 
 Security contract:
     The `since`, `until`, and `paths` parameters are passed directly to git as
@@ -15,8 +19,8 @@ Security contract:
 
 Failure-mode contract:
     Operational errors (not-a-git-repo, git missing, timeout, git exit
-    failure) are captured in GitLogResult.errors with ok=False. The function
-    never raises for these. ValueError is reserved for programmer errors
+    failure) are captured in result errors with ok=False. The functions
+    never raise for these. ValueError is reserved for programmer errors
     (argument validation).
 """
 
@@ -29,7 +33,7 @@ from pathlib import Path
 from aux.util.subprocess import run_tool, which
 
 # ---------------------------------------------------------------------------
-# Data structures
+# Data structures — name-only mode
 # ---------------------------------------------------------------------------
 
 
@@ -45,10 +49,45 @@ class CommitRecord:
 
 @dataclass(frozen=True)
 class GitLogResult:
-    """Result of a git log walk."""
+    """Result of a git log walk (name-only mode)."""
 
     commits: tuple[CommitRecord, ...]
     repo_root: Path | None           # None if cwd is not inside a git repo
+    ok: bool
+    is_shallow: bool
+    errors: tuple[str, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# Data structures — numstat mode
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FileChurnRecord:
+    """Per-file line-level churn from a single commit."""
+
+    file: str           # repo-relative, forward-slash
+    insertions: int     # lines added (0 for binary)
+    deletions: int      # lines removed (0 for binary)
+
+
+@dataclass(frozen=True)
+class NumstatCommitRecord:
+    """One commit's metadata plus per-file numstat."""
+
+    commit_hash: str
+    author_date: str         # ISO 8601 (%aI)
+    files: tuple[FileChurnRecord, ...]
+    parent_count: int
+
+
+@dataclass(frozen=True)
+class GitNumstatResult:
+    """Result of a git log walk (numstat mode)."""
+
+    commits: tuple[NumstatCommitRecord, ...]
+    repo_root: Path | None
     ok: bool
     is_shallow: bool
     errors: tuple[str, ...] = ()
@@ -91,52 +130,52 @@ def _reject_flag_like(value: str, field: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Output parser
+# Output parsers
 # ---------------------------------------------------------------------------
 
 
-def _parse_log_output(output: str) -> list[CommitRecord]:
-    """Parse the output of our custom git log format into CommitRecords.
+def _parse_header(block: str) -> tuple[str, str, int, str] | None:
+    """Parse a commit header block into (hash, date, parent_count, file_text).
 
-    Format emitted by:
-        git log --name-only --pretty=format:%x1e%H%x1f%aI%x1f%P
-
-    Each commit begins with RS (0x1e). Within a commit, the first line is
-    the header (hash, date, parents — US-separated), followed by newline-
-    separated filenames.
+    Returns None for malformed headers.
     """
+    newline_idx = block.find("\n")
+    if newline_idx == -1:
+        header = block
+        file_text = ""
+    else:
+        header = block[:newline_idx]
+        file_text = block[newline_idx + 1:]
+
+    header = header.rstrip("\r\n")
+    fields = header.split(_US)
+    if len(fields) < 3:
+        return None
+
+    commit_hash = fields[0]
+    author_date = fields[1]
+    parents_str = fields[2]
+    parent_count = len(parents_str.split()) if parents_str.strip() else 0
+
+    return commit_hash, author_date, parent_count, file_text
+
+
+def _parse_log_output(output: str) -> list[CommitRecord]:
+    """Parse ``git log --name-only`` output into CommitRecords."""
     if not output:
         return []
 
     records: list[CommitRecord] = []
-    blocks = output.split(_RS)
-    for block in blocks:
+    for block in output.split(_RS):
         if not block or not block.strip():
             continue
-
-        # Header ends at the first newline; files follow
-        newline_idx = block.find("\n")
-        if newline_idx == -1:
-            header = block
-            file_text = ""
-        else:
-            header = block[:newline_idx]
-            file_text = block[newline_idx + 1:]
-
-        header = header.rstrip("\r\n")
-        fields = header.split(_US)
-        if len(fields) < 3:
-            continue  # Malformed, skip
-
-        commit_hash = fields[0]
-        author_date = fields[1]
-        parents_str = fields[2]
-        parent_count = len(parents_str.split()) if parents_str.strip() else 0
-
+        parsed = _parse_header(block)
+        if parsed is None:
+            continue
+        commit_hash, author_date, parent_count, file_text = parsed
         files = tuple(
             line for line in file_text.split("\n") if line and line.strip()
         )
-
         records.append(
             CommitRecord(
                 commit_hash=commit_hash,
@@ -145,16 +184,60 @@ def _parse_log_output(output: str) -> list[CommitRecord]:
                 parent_count=parent_count,
             )
         )
+    return records
 
+
+def _parse_numstat_log_output(output: str) -> list[NumstatCommitRecord]:
+    """Parse ``git log --numstat`` output into NumstatCommitRecords.
+
+    Each file line is ``insertions\\tdeletions\\tpath``.
+    Binary files report ``-\\t-\\tpath`` — mapped to (0, 0).
+    """
+    if not output:
+        return []
+
+    records: list[NumstatCommitRecord] = []
+    for block in output.split(_RS):
+        if not block or not block.strip():
+            continue
+        parsed = _parse_header(block)
+        if parsed is None:
+            continue
+        commit_hash, author_date, parent_count, file_text = parsed
+
+        file_records: list[FileChurnRecord] = []
+        for line in file_text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("\t", 2)
+            if len(parts) < 3:
+                continue
+            ins_str, del_str, path = parts
+            # Binary files: "-\t-\tpath"
+            insertions = int(ins_str) if ins_str != "-" else 0
+            deletions = int(del_str) if del_str != "-" else 0
+            file_records.append(
+                FileChurnRecord(file=path, insertions=insertions, deletions=deletions)
+            )
+
+        records.append(
+            NumstatCommitRecord(
+                commit_hash=commit_hash,
+                author_date=author_date,
+                files=tuple(file_records),
+                parent_count=parent_count,
+            )
+        )
     return records
 
 
 # ---------------------------------------------------------------------------
-# Main entry point
+# Shared git log infrastructure
 # ---------------------------------------------------------------------------
 
 
-def git_log_file_changes(
+def _run_git_log(
     cwd: Path,
     *,
     since: str | None = None,
@@ -162,31 +245,12 @@ def git_log_file_changes(
     include_merges: bool = False,
     paths: list[str] | None = None,
     timeout: float = 300.0,
-) -> GitLogResult:
-    """Walk ``git log`` and return per-commit file-change records.
+    log_mode: str = "--name-only",
+) -> tuple[str | None, Path | None, bool, list[str]]:
+    """Run ``git log`` and return raw stdout plus metadata.
 
-    Args:
-        cwd: Any path inside the git repo. Used to locate the repo root via
-            ``git rev-parse --show-toplevel``.
-        since: Git-style time specifier (``"90 days ago"``, ``"2025-01-01"``,
-            ...). Leading dashes are rejected (flag-injection guard).
-        until: Upper bound on author date, same format as ``since``.
-        include_merges: If False (default), merge commits are excluded
-            (``--no-merges``).
-        paths: Pathspec limits. Each element must not begin with ``-``. A
-            ``--`` sentinel is inserted before the pathspec list so git
-            cannot interpret elements as options.
-        timeout: Seconds to wait for ``git log`` (default 300). Tuned for
-            large repos; the 60s default in ``run_tool`` is too short.
-
-    Returns:
-        :class:`GitLogResult`. ``ok=False`` when cwd is not in a git repo,
-        git is missing, ``git log`` fails, or the subprocess times out.
-        Operational errors are captured in ``errors``, not raised.
-
-    Raises:
-        ValueError: If any ``since``/``until``/``paths`` argument begins
-            with ``-``.
+    Returns (stdout_or_none, repo_root, is_shallow, errors).
+    stdout is None on failure; errors is populated with reasons.
     """
     # --- Argument validation (flag-injection guard) ---
     if since is not None:
@@ -201,13 +265,9 @@ def git_log_file_changes(
 
     # --- Git availability ---
     if which("git") is None:
-        return GitLogResult(
-            commits=(),
-            repo_root=None,
-            ok=False,
-            is_shallow=False,
-            errors=("git not found — install git and ensure it is in PATH",),
-        )
+        return None, None, False, [
+            "git not found — install git and ensure it is in PATH"
+        ]
 
     # --- Resolve repo root ---
     cwd_for_rev = cwd if cwd.is_dir() else cwd.parent
@@ -217,33 +277,20 @@ def git_log_file_changes(
     )
     if not top_result.ok:
         err = top_result.stderr.strip() or f"git rev-parse failed (exit {top_result.returncode})"
-        return GitLogResult(
-            commits=(),
-            repo_root=None,
-            ok=False,
-            is_shallow=False,
-            errors=(f"not a git repository: {err}",),
-        )
+        return None, None, False, [f"not a git repository: {err}"]
 
     repo_root = Path(top_result.stdout.strip())
 
     # --- Empty-repo short-circuit ---
-    # git log on a repo with no commits exits non-zero with "does not have
-    # any commits yet" — treat this as ok with empty result.
     head_result = run_tool(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
         cwd=repo_root,
     )
     if not head_result.ok:
-        return GitLogResult(
-            commits=(),
-            repo_root=repo_root,
-            ok=True,
-            is_shallow=False,
-            errors=(),
-        )
+        # No commits yet — return empty stdout, not an error
+        return "", repo_root, False, []
 
-    # --- Shallow repo detection (warn, don't fail) ---
+    # --- Shallow repo detection ---
     shallow_result = run_tool(
         ["git", "rev-parse", "--is-shallow-repository"],
         cwd=repo_root,
@@ -260,7 +307,7 @@ def git_log_file_changes(
     log_args: list[str] = [
         "git",
         "log",
-        "--name-only",
+        log_mode,
         f"--pretty=format:{_FORMAT}",
     ]
     if not include_merges:
@@ -277,31 +324,107 @@ def git_log_file_changes(
     try:
         log_result = run_tool(log_args, cwd=repo_root, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return GitLogResult(
-            commits=(),
-            repo_root=repo_root,
-            ok=False,
-            is_shallow=is_shallow,
-            errors=(*errors, f"git log timed out after {timeout}s"),
-        )
+        errors.append(f"git log timed out after {timeout}s")
+        return None, repo_root, is_shallow, errors
 
     if not log_result.ok:
         err = log_result.stderr.strip() or f"git log failed (exit {log_result.returncode})"
+        errors.append(err)
+        return None, repo_root, is_shallow, errors
+
+    return log_result.stdout, repo_root, is_shallow, errors
+
+
+# ---------------------------------------------------------------------------
+# Public entry points
+# ---------------------------------------------------------------------------
+
+
+def git_log_file_changes(
+    cwd: Path,
+    *,
+    since: str | None = None,
+    until: str | None = None,
+    include_merges: bool = False,
+    paths: list[str] | None = None,
+    timeout: float = 300.0,
+) -> GitLogResult:
+    """Walk ``git log --name-only`` and return per-commit file-change records.
+
+    Args:
+        cwd: Any path inside the git repo.
+        since: Git-style time specifier (``"90 days ago"``, ``"2025-01-01"``).
+        until: Upper bound on author date, same format as ``since``.
+        include_merges: If False (default), merge commits are excluded.
+        paths: Pathspec limits. Each element must not begin with ``-``.
+        timeout: Seconds to wait for ``git log`` (default 300).
+
+    Returns:
+        :class:`GitLogResult`. ``ok=False`` on operational errors.
+
+    Raises:
+        ValueError: If any argument begins with ``-``.
+    """
+    stdout, repo_root, is_shallow, errors = _run_git_log(
+        cwd, since=since, until=until, include_merges=include_merges,
+        paths=paths, timeout=timeout, log_mode="--name-only",
+    )
+
+    if stdout is None:
         return GitLogResult(
-            commits=(),
-            repo_root=repo_root,
-            ok=False,
-            is_shallow=is_shallow,
-            errors=(*errors, err),
+            commits=(), repo_root=repo_root, ok=False,
+            is_shallow=is_shallow, errors=tuple(errors),
         )
 
-    # --- Parse output ---
-    commits = _parse_log_output(log_result.stdout)
-
+    commits = _parse_log_output(stdout)
     return GitLogResult(
-        commits=tuple(commits),
-        repo_root=repo_root,
-        ok=True,
-        is_shallow=is_shallow,
-        errors=tuple(errors),
+        commits=tuple(commits), repo_root=repo_root, ok=True,
+        is_shallow=is_shallow, errors=tuple(errors),
+    )
+
+
+def git_log_numstat(
+    cwd: Path,
+    *,
+    since: str | None = None,
+    until: str | None = None,
+    include_merges: bool = False,
+    paths: list[str] | None = None,
+    timeout: float = 300.0,
+) -> GitNumstatResult:
+    """Walk ``git log --numstat`` and return per-commit per-file line stats.
+
+    Same interface as :func:`git_log_file_changes`, but returns
+    :class:`GitNumstatResult` with per-file insertion/deletion counts
+    instead of bare file names.
+
+    Args:
+        cwd: Any path inside the git repo.
+        since: Git-style time specifier.
+        until: Upper bound on author date.
+        include_merges: If False (default), merge commits are excluded.
+        paths: Pathspec limits.
+        timeout: Seconds to wait for ``git log`` (default 300).
+
+    Returns:
+        :class:`GitNumstatResult`. ``ok=False`` on operational errors.
+
+    Raises:
+        ValueError: If any argument begins with ``-``.
+    """
+    stdout, repo_root, is_shallow, errors = _run_git_log(
+        cwd, since=since, until=until, include_merges=include_merges,
+        paths=paths, timeout=timeout, log_mode="--numstat",
+    )
+
+    if stdout is None:
+        return GitNumstatResult(
+            commits=(), repo_root=repo_root, ok=False,
+            is_shallow=is_shallow, errors=tuple(errors),
+        )
+
+    commits = _parse_numstat_log_output(stdout)
+    return GitNumstatResult(
+        commits=tuple(commits), repo_root=repo_root, ok=True,
+        is_shallow=is_shallow, errors=tuple(errors),
     )

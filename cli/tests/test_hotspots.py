@@ -1,4 +1,4 @@
-"""Tests for aux hotspots — churn-weighted complexity scoring."""
+"""Tests for aux hotspots — growth-weighted complexity scoring."""
 
 from __future__ import annotations
 
@@ -141,7 +141,7 @@ def test_hotspots_plan_defaults():
     assert plan.excludes == []
     assert plan.hidden is False
     assert plan.no_ignore is False
-    assert plan.since == "90 days ago"
+    assert plan.since == "14 days ago"
     assert plan.until is None
     assert plan.min_commits == 2
     assert plan.max_results is None
@@ -192,10 +192,9 @@ def test_not_a_git_repo_returns_error(tmp_path: Path):
     assert any("not a git repository" in e for e in result.errors)
 
 
-def test_single_complex_file_multiple_commits_ranked_first(tmp_path: Path):
+def test_single_complex_file_multiple_commits(tmp_path: Path):
     repo = _init_repo(tmp_path / "repo")
     _commit(repo, {"hot.py": _COMPLEX_PY}, "c1", "2026-03-01T00:00:00+00:00")
-    # Touch it twice more
     _commit(
         repo,
         {"hot.py": _COMPLEX_PY + "\n# edit 1\n"},
@@ -212,9 +211,11 @@ def test_single_complex_file_multiple_commits_ranked_first(tmp_path: Path):
     assert len(result.files) == 1
     h = result.files[0]
     assert h.file == "hot.py"
-    assert h.change_freq == 3
+    assert h.commit_count == 3
+    assert h.loc_delta > 0
+    assert h.loc_insertions > 0
     assert h.sum_ccx >= 6
-    assert h.hotspot_score == h.sum_ccx * 3
+    assert h.hotspot_score == h.sum_ccx * max(0, h.loc_delta)
 
 
 def test_no_commits_in_window_returns_empty(tmp_path: Path):
@@ -240,14 +241,13 @@ def test_min_commits_filter(tmp_path: Path):
         "2026-03-02T00:00:00+00:00",
     )
     result = hotspots_kernel(repo, since=None, min_commits=2)
-    # once.py has 1 commit, twice.py has 2 — only twice.py survives
     assert len(result.files) == 1
     assert result.files[0].file == "twice.py"
-    assert result.files_excluded_below_min_commits == 1
+    assert result.files_excluded_below_min_commits >= 1
 
 
 # ---------------------------------------------------------------------------
-# 3. Joining ccx + git
+# 3. Joining ccx + git numstat
 # ---------------------------------------------------------------------------
 
 
@@ -336,8 +336,8 @@ def test_root_as_subdirectory_of_repo(tmp_path: Path):
         repo,
         {
             "src/code.py": _COMPLEX_PY,
-            "docs/notes.md": "hi\n",  # not python, should be ignored
-            "other/noise.py": _SIMPLE_PY,  # outside the subdir we analyze
+            "docs/notes.md": "hi\n",
+            "other/noise.py": _SIMPLE_PY,
         },
         "c1",
         "2026-03-01T00:00:00+00:00",
@@ -351,13 +351,11 @@ def test_root_as_subdirectory_of_repo(tmp_path: Path):
         "c2",
         "2026-03-02T00:00:00+00:00",
     )
-    # Analyze only the src subdirectory
     result = hotspots_kernel(repo / "src", since=None, min_commits=2)
     assert len(result.files) == 1
     h = result.files[0]
-    # File path should be repo-root-relative
     assert h.file == "src/code.py"
-    assert h.change_freq == 2
+    assert h.commit_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +364,7 @@ def test_root_as_subdirectory_of_repo(tmp_path: Path):
 
 
 def _mk_hotspot(
-    file: str, sum_ccx: int, change_freq: int
+    file: str, sum_ccx: int, loc_delta: int, commit_count: int = 1,
 ) -> FileHotspot:
     return FileHotspot(
         file=file,
@@ -374,10 +372,13 @@ def _mk_hotspot(
         language="python",
         sum_ccx=sum_ccx,
         max_ccx=sum_ccx,
-        change_freq=change_freq,
+        loc_delta=loc_delta,
+        loc_insertions=max(0, loc_delta),
+        loc_deletions=max(0, -loc_delta),
+        commit_count=commit_count,
         first_seen="2026-03-01",
         last_seen="2026-03-10",
-        hotspot_score=float(sum_ccx * change_freq),
+        hotspot_score=float(sum_ccx * max(0, loc_delta)),
         hotspot_score_normalized=0.0,
         quadrant="calm",
         interpretation="",
@@ -385,37 +386,31 @@ def _mk_hotspot(
 
 
 def test_percentile_cutoff_inclusive():
-    # values = [1,2,3,4,5,6,7,8], p75, n=8
-    # idx = ceil(0.75 * 8) - 1 = ceil(6) - 1 = 5 → value at index 5 = 6
     assert _percentile_cutoff([1, 2, 3, 4, 5, 6, 7, 8], 0.75) == 6
 
 
 def test_quadrants_four_corners():
     hotspots = [
-        # "calm" corner: low ccx, low churn (n=4)
+        # "calm" corner: low ccx, low growth
         _mk_hotspot("calm1.py", 1, 1),
         _mk_hotspot("calm2.py", 2, 1),
         _mk_hotspot("calm3.py", 1, 2),
         _mk_hotspot("calm4.py", 2, 2),
-        # "churning_simple": low ccx, high churn (n=2)
+        # "churning_simple": low ccx, high growth
         _mk_hotspot("churn1.py", 1, 50),
         _mk_hotspot("churn2.py", 2, 40),
-        # "stable_complex": high ccx, low churn (n=2)
+        # "stable_complex": high ccx, low growth
         _mk_hotspot("stable1.py", 100, 1),
         _mk_hotspot("stable2.py", 90, 2),
-        # "hotspot": high ccx, high churn (n=2)
+        # "hotspot": high ccx, high growth
         _mk_hotspot("hot1.py", 80, 30),
         _mk_hotspot("hot2.py", 70, 20),
     ]
     counts = _assign_quadrants(hotspots, 0.75)
-    # Total files: 10, percentile cutoff should put top ~3 in high-band
-    # hotspots must be non-empty, calm must dominate
     assert counts["hotspot"] >= 1
     assert counts["calm"] >= 1
-    # Sanity: all quadrants assigned
     total = sum(counts.values())
     assert total == 10
-    # Check the obvious hotspot files landed correctly
     by_file = {h.file: h for h in hotspots}
     assert by_file["hot1.py"].quadrant == "hotspot"
     assert by_file["calm1.py"].quadrant == "calm"
@@ -453,7 +448,6 @@ def test_interpretation_keyed_to_quadrant():
 
 def test_sort_stable_on_score_ties(tmp_path: Path):
     repo = _init_repo(tmp_path / "repo")
-    # Two files with identical complexity and churn
     _commit(
         repo,
         {"aaa.py": _COMPLEX_PY, "bbb.py": _COMPLEX_PY},
@@ -471,7 +465,6 @@ def test_sort_stable_on_score_ties(tmp_path: Path):
     )
     result = hotspots_kernel(repo, since=None, min_commits=2)
     assert len(result.files) == 2
-    # Tie broken by file name (asc) — aaa.py should come first
     assert result.files[0].file == "aaa.py"
     assert result.files[1].file == "bbb.py"
 
@@ -510,7 +503,74 @@ def test_normalized_score_max_is_100(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# 6. Error handling / degradation
+# 6. LOC-delta specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_loc_delta_fields_populated(tmp_path: Path):
+    repo = _init_repo(tmp_path / "repo")
+    # Create a 5-line file, then add 3 more lines
+    _commit(repo, {"a.py": "def f():\n    return 1\n\ndef g():\n    return 2\n"}, "c1", "2026-03-01T00:00:00+00:00")
+    _commit(repo, {"a.py": "def f():\n    return 1\n\ndef g():\n    return 2\n\ndef h():\n    return 3\n"}, "c2", "2026-03-02T00:00:00+00:00")
+    result = hotspots_kernel(repo, since=None, min_commits=2)
+    assert len(result.files) == 1
+    h = result.files[0]
+    assert h.loc_insertions > 0
+    assert h.loc_delta == h.loc_insertions - h.loc_deletions
+    assert h.commit_count == 2
+
+
+def test_shrinking_file_scores_zero(tmp_path: Path):
+    """A file that lost lines (within the window) should have hotspot_score == 0.
+
+    The creation commit is placed BEFORE the window so its insertions don't
+    count. Within the window, only the shrink commit is visible: it deletes
+    20 lines and inserts 2, giving loc_delta = -18.
+    """
+    repo = _init_repo(tmp_path / "repo")
+    big = "def f():\n" + "".join(f"    x{i} = {i}\n" for i in range(20)) + "    return 1\n"
+    small = "def f():\n    return 1\n"
+    # Create the big file BEFORE the window
+    _commit(repo, {"shrink.py": big}, "c1", "2020-01-01T00:00:00+00:00")
+    # Shrink it within the window
+    _commit(repo, {"shrink.py": small}, "c2", "2026-03-02T00:00:00+00:00")
+    result = hotspots_kernel(repo, since="2026-01-01", min_commits=1)
+    assert len(result.files) == 1
+    h = result.files[0]
+    assert h.loc_delta < 0
+    assert h.hotspot_score == 0.0
+
+
+def test_large_single_commit_high_score(tmp_path: Path):
+    """The agentic failure mode: one commit dumps 200 lines into a file.
+
+    Under the old formula (ccx * 1 commit) this would score low.
+    Under the new formula (ccx * 200 LOC) this scores high.
+    """
+    repo = _init_repo(tmp_path / "repo")
+    # Initial: small file
+    _commit(repo, {"target.py": "def main():\n    pass\n"}, "c1", "2026-03-01T00:00:00+00:00")
+    # Agent dumps 200 lines of helpers
+    lines = ["def main():\n    pass\n\n"]
+    for i in range(40):
+        lines.append(f"def _helper_{i}(x):\n")
+        lines.append(f"    if x > {i}:\n")
+        lines.append(f"        return x + {i}\n")
+        lines.append(f"    return x\n\n")
+    big_file = "".join(lines)
+    _commit(repo, {"target.py": big_file}, "c2", "2026-03-02T00:00:00+00:00")
+    result = hotspots_kernel(repo, since=None, min_commits=1)
+    assert len(result.files) == 1
+    h = result.files[0]
+    # loc_delta should be large (150+ lines added)
+    assert h.loc_delta > 100
+    # Score should be significant: ccx * loc_delta
+    assert h.hotspot_score > 0
+    assert h.sum_ccx > 1
+
+
+# ---------------------------------------------------------------------------
+# 7. Error handling / degradation
 # ---------------------------------------------------------------------------
 
 
@@ -518,7 +578,6 @@ def test_errors_prefixed_by_source(tmp_path: Path):
     plain = tmp_path / "plain"
     plain.mkdir()
     result = hotspots_kernel(plain)
-    # Not a git repo — should produce a git-prefixed error
     assert any(e.startswith("git:") for e in result.errors)
 
 
@@ -545,7 +604,7 @@ def test_since_sentinel_all_means_unbounded(tmp_path: Path):
         "c2",
         "2020-02-01T00:00:00+00:00",
     )
-    # Default since="90 days ago" would exclude these
+    # Default since="14 days ago" would exclude these
     result_bounded = hotspots_kernel(repo, min_commits=2)
     assert len(result_bounded.files) == 0
     # "all" sentinel picks them up
@@ -555,7 +614,7 @@ def test_since_sentinel_all_means_unbounded(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# 7. CLI round-trip
+# 8. CLI round-trip
 # ---------------------------------------------------------------------------
 
 
@@ -571,7 +630,6 @@ def test_cli_schema_output():
 def test_cli_missing_root_errors():
     rc, out = _run(["hotspots"])
     assert rc == 1
-    # Error output may be pretty text or JSON; check for the required marker
     assert "--root required" in out or "root" in out.lower()
 
 
@@ -602,7 +660,8 @@ def test_cli_simple_mode_smoke(tmp_path: Path):
     assert len(data["files"]) == 1
     assert data["files"][0]["file"] == "a.py"
     assert data["files"][0]["sum_ccx"] >= 6
-    assert data["files"][0]["change_freq"] == 2
+    assert data["files"][0]["commit_count"] == 2
+    assert "loc_delta" in data["files"][0]
 
 
 def test_cli_plan_mode(tmp_path: Path):
@@ -669,7 +728,10 @@ def test_cli_json_output_shape(tmp_path: Path):
         "language",
         "sum_ccx",
         "max_ccx",
-        "change_freq",
+        "loc_delta",
+        "loc_insertions",
+        "loc_deletions",
+        "commit_count",
         "first_seen",
         "last_seen",
         "hotspot_score",

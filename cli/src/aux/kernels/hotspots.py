@@ -1,16 +1,21 @@
-"""Hotspots kernel — churn-weighted complexity scoring per file.
+"""Hotspots kernel — growth-weighted complexity scoring per file.
 
-Composes `ccx_kernel` (complexity) with `git_log_file_changes` (change
-frequency) to compute Tornhill-style hotspot scores. A file's hotspot score
-is ``sum_ccx × change_freq``; files are classified into quadrants based on
-75th-percentile cutoffs on both axes.
+Composes `ccx_kernel` (complexity) with `git_log_numstat` (LOC change
+volume) to compute hotspot scores. A file's hotspot score is
+``sum_ccx × max(0, loc_delta)``; files are classified into quadrants
+based on 75th-percentile cutoffs on both axes.
+
+This is Tornhill's (2015) churn-weighted complexity framework with an
+adapted churn proxy: net LOC delta over the window instead of raw commit
+count. Commit count was a reasonable proxy when most commits were human-
+authored and roughly similar in scope. With agentic code generation, one
+commit can dump 400 lines into a file. LOC delta directly measures the
+volume of change, which is the signal that matters.
 
 Cross-kernel composition contract:
     Analysis kernels compose **only downward**. ``hotspots`` calls ``ccx``
     to reuse the canonical complexity source; ``ccx`` must NEVER call
-    ``hotspots`` (that would be a cycle). If a second caller of
-    ``ccx_kernel`` at the analysis tier appears, extract a thin wrapper
-    rather than duplicate the pattern ad hoc.
+    ``hotspots`` (that would be a cycle).
 
 Path normalization:
     ``ccx`` emits paths relative to the caller-supplied ``root``. ``git log``
@@ -20,9 +25,10 @@ Path normalization:
     repo-root-relative strings.
 
 Agentic-era tuning:
-    The default ``since`` window is 90 days (not Tornhill's canonical 1
-    year). Agentic code rot accumulates on a steeper curve than human-era
-    churn; a 1-year window on an agent-assisted repo produces noise.
+    The default ``since`` window is 14 days. Agentic code rot accumulates
+    in days, not months — a file that absorbed 200 lines of private helpers
+    this week is a louder signal than one that drifted over a quarter.
+    Widen to ``"90 days ago"`` or ``"all"`` for human-pace repos.
 """
 
 from __future__ import annotations
@@ -33,7 +39,7 @@ from pathlib import Path
 
 from aux.kernels.ccx import FileMetrics, ccx_kernel
 from aux.kernels.ccx import _LANG_CONFIG as _CCX_LANG_CONFIG  # noqa: PLC2701 — composition contract
-from aux.util.git import CommitRecord, git_log_file_changes
+from aux.util.git import NumstatCommitRecord, git_log_numstat
 from aux.util.treesitter import detect_language
 
 # ---------------------------------------------------------------------------
@@ -43,17 +49,20 @@ from aux.util.treesitter import detect_language
 
 @dataclass
 class FileHotspot:
-    """Per-file churn-weighted complexity record."""
+    """Per-file growth-weighted complexity record."""
 
     file: str                          # repo-root-relative, forward-slash
     path: str                          # absolute filesystem path
     language: str                      # from ccx detection
     sum_ccx: int                       # sum of ccx across all functions in file
     max_ccx: int                       # worst single function in file
-    change_freq: int                   # commit count in window
+    loc_delta: int                     # net LOC change (insertions - deletions) in window
+    loc_insertions: int                # total insertions in window
+    loc_deletions: int                 # total deletions in window
+    commit_count: int                  # commits in window (metadata, not used for scoring)
     first_seen: str                    # ISO date (YYYY-MM-DD) of oldest commit in window
     last_seen: str                     # ISO date of newest commit in window
-    hotspot_score: float               # sum_ccx * change_freq (sorting key)
+    hotspot_score: float               # sum_ccx * max(0, loc_delta) (sorting key)
     hotspot_score_normalized: float    # 0.0 - 100.0 scaled by max
     quadrant: str                      # "hotspot"|"stable_complex"|"churning_simple"|"calm"|"insufficient_data"
     interpretation: str                # human-readable verdict
@@ -137,11 +146,7 @@ def _normalize_since(since: str | None) -> str | None:
 
 
 def _subdir_prefix(root: Path, repo_root: Path) -> str:
-    """Compute the repo-root-relative prefix for files under root.
-
-    Returns "" if root == repo_root, otherwise a forward-slash relative path
-    without a trailing slash. Raises ValueError if root is not under repo_root.
-    """
+    """Compute the repo-root-relative prefix for files under root."""
     root_resolved = root.resolve()
     repo_resolved = repo_root.resolve()
     if root_resolved == repo_resolved:
@@ -151,27 +156,24 @@ def _subdir_prefix(root: Path, repo_root: Path) -> str:
 
 
 def _scope_commits_to_prefix(
-    commits: tuple[CommitRecord, ...], prefix: str
-) -> list[CommitRecord]:
-    """Filter a commit list to only files under the given repo-relative prefix.
-
-    An empty prefix means no filtering (root == repo_root).
-    """
+    commits: tuple[NumstatCommitRecord, ...], prefix: str
+) -> list[NumstatCommitRecord]:
+    """Filter a commit list to only files under the given repo-relative prefix."""
     if not prefix:
         return list(commits)
     prefix_with_slash = prefix + "/"
-    scoped: list[CommitRecord] = []
+    scoped: list[NumstatCommitRecord] = []
     for c in commits:
         kept = tuple(
-            f for f in c.files_changed
-            if f == prefix or f.startswith(prefix_with_slash)
+            f for f in c.files
+            if f.file == prefix or f.file.startswith(prefix_with_slash)
         )
         if kept:
             scoped.append(
-                CommitRecord(
+                NumstatCommitRecord(
                     commit_hash=c.commit_hash,
                     author_date=c.author_date,
-                    files_changed=kept,
+                    files=kept,
                     parent_count=c.parent_count,
                 )
             )
@@ -187,16 +189,27 @@ def _ccx_key(fm: FileMetrics, subdir_prefix: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Churn accumulator
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _FileChurnAccum:
+    """Accumulator for per-file LOC churn stats during join."""
+
+    insertions: int = 0
+    deletions: int = 0
+    commit_count: int = 0
+    dates: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
 # Quadrant classification
 # ---------------------------------------------------------------------------
 
 
 def _percentile_cutoff(values: list[int], percentile: float) -> int:
-    """Return the inclusive percentile cutoff for a sorted list of ints.
-
-    Uses ``index = ceil(percentile * n) - 1`` on an ascending sort. A value
-    at exactly the cutoff is classified as "high" (inclusive boundary).
-    """
+    """Return the inclusive percentile cutoff for a sorted list of ints."""
     if not values:
         return 0
     n = len(values)
@@ -209,9 +222,9 @@ def _assign_quadrants(
 ) -> dict[str, int]:
     """Assign quadrant classification to each hotspot in place.
 
-    Returns the quadrant count dict. When fewer than 8 files remain after
-    filtering, percentile classification is meaningless — everything gets
-    the ``insufficient_data`` label.
+    Churn axis uses ``loc_delta`` (net LOC growth). Complexity axis uses
+    ``sum_ccx``. When fewer than 8 files remain, everything gets
+    ``insufficient_data``.
     """
     counts = _empty_quadrant_counts()
 
@@ -223,11 +236,11 @@ def _assign_quadrants(
         return counts
 
     p_ccx = _percentile_cutoff([h.sum_ccx for h in hotspots], percentile)
-    p_churn = _percentile_cutoff([h.change_freq for h in hotspots], percentile)
+    p_churn = _percentile_cutoff([h.loc_delta for h in hotspots], percentile)
 
     for h in hotspots:
         high_ccx = h.sum_ccx >= p_ccx
-        high_churn = h.change_freq >= p_churn
+        high_churn = h.loc_delta >= p_churn
         if high_ccx and high_churn:
             q = "hotspot"
         elif high_ccx:
@@ -260,12 +273,12 @@ _QUADRANT_LABELS: dict[str, str] = {
 def _interpret_hotspot(h: FileHotspot) -> str:
     """Human-readable one-line verdict keyed to the quadrant."""
     base = (
-        f"CCX={h.sum_ccx}, churn={h.change_freq} commits "
-        f"(last touched {h.last_seen})"
+        f"CCX={h.sum_ccx}, growth=+{h.loc_delta} LOC "
+        f"across {h.commit_count} commits (last touched {h.last_seen})"
     )
     if h.quadrant == "hotspot":
         return (
-            f"Active hotspot: {base}. Complex AND frequently changed — "
+            f"Active hotspot: {base}. Complex AND growing fast — "
             f"prime refactor target."
         )
     if h.quadrant == "stable_complex":
@@ -275,7 +288,7 @@ def _interpret_hotspot(h: FileHotspot) -> str:
         )
     if h.quadrant == "churning_simple":
         return (
-            f"Churning simple: {base}. Hot path but straightforward — "
+            f"Churning simple: {base}. Fast-growing but straightforward — "
             f"watch for accidental complexity growth."
         )
     if h.quadrant == "calm":
@@ -300,7 +313,7 @@ def _build_guidance(hotspots: list[FileHotspot]) -> list[str]:
         label = _QUADRANT_LABELS.get(h.quadrant, h.quadrant)
         items.append(
             f"{h.file} ({label}): CCX={h.sum_ccx}, "
-            f"churn={h.change_freq}, score={h.hotspot_score:.0f}"
+            f"growth=+{h.loc_delta} LOC, score={h.hotspot_score:.0f}"
         )
         if len(items) >= 10:
             break
@@ -321,7 +334,7 @@ def hotspots_kernel(
     hidden: bool = False,
     no_ignore: bool = False,
     # time window
-    since: str | None = "90 days ago",
+    since: str | None = "14 days ago",
     until: str | None = None,
     # filtering
     min_commits: int = 2,
@@ -330,7 +343,7 @@ def hotspots_kernel(
     # classification
     hotspot_percentile: float = 0.75,
 ) -> HotspotsResult:
-    """Compute churn-weighted complexity hotspots per file.
+    """Compute growth-weighted complexity hotspots per file.
 
     Args:
         root: Repository root (or any subdirectory of a git repo).
@@ -338,29 +351,27 @@ def hotspots_kernel(
         excludes: File patterns to exclude (pass-through to ccx).
         hidden: Include hidden files.
         no_ignore: Ignore .gitignore rules.
-        since: Git log window start. Default ``"90 days ago"`` — tighter
-            than Tornhill's canonical 1yr because agentic rot accumulates
-            on a steeper curve. Accepts git-style specifiers, ``None``, or
-            the sentinels ``""``/``"all"``/``"unbounded"`` for full history.
+        since: Git log window start. Default ``"14 days ago"`` — tuned for
+            agentic code generation where architectural damage from file
+            growth accumulates in days, not months. Widen to
+            ``"90 days ago"`` or ``"all"`` for human-pace repos.
         until: Git log window end.
         min_commits: Exclude files with fewer than this many commits in
-            the window. Default 2 (filters drive-by single-touch noise).
+            the window. Default 2.
         max_results: Cap the ranked result list (post-sort truncation).
         hotspot_percentile: Cutoff for quadrant classification (default
             0.75 = top 25% on each axis = hotspot quadrant).
 
     Returns:
-        :class:`HotspotsResult`. Errors from the git primitive and the ccx
-        kernel are captured in ``errors``, not raised.
+        :class:`HotspotsResult`.
     """
     errors: list[str] = []
     display_since = since if since is not None else "unbounded"
     display_until = until if until is not None else ""
 
-    # --- Step 1: Walk git history ---
-    # Run git first so we can detect not-a-repo before doing expensive ccx work.
+    # --- Step 1: Walk git history (numstat for LOC deltas) ---
     git_since = _normalize_since(since)
-    git_result = git_log_file_changes(
+    git_result = git_log_numstat(
         root,
         since=git_since,
         until=until,
@@ -377,7 +388,6 @@ def hotspots_kernel(
 
     repo_root = git_result.repo_root
     if repo_root is None:
-        # Shouldn't happen with ok=True, but defensive
         errors.append("git: repo_root resolution failed despite ok=True")
         return _empty_result(
             since=display_since,
@@ -415,11 +425,15 @@ def hotspots_kernel(
         _ccx_key(fm, subdir_prefix): fm for fm in ccx_result.files
     }
 
-    # --- Step 4: Build per-file churn map ---
-    churn_by_file: dict[str, list[str]] = {}
+    # --- Step 4: Build per-file LOC churn map ---
+    churn_by_file: dict[str, _FileChurnAccum] = {}
     for c in scoped_commits:
-        for f in c.files_changed:
-            churn_by_file.setdefault(f, []).append(c.author_date)
+        for fcr in c.files:
+            acc = churn_by_file.setdefault(fcr.file, _FileChurnAccum())
+            acc.insertions += fcr.insertions
+            acc.deletions += fcr.deletions
+            acc.commit_count += 1
+            acc.dates.append(c.author_date)
 
     # --- Step 5: Join, filter, build hotspots ---
     files_excluded_unsupported_language = 0
@@ -438,11 +452,6 @@ def hotspots_kernel(
 
         fm = ccx_by_repo_path.get(repo_rel)
         if fm is None:
-            # Distinguish "unsupported language" from "Python file with zero
-            # functions": ccx_kernel only emits FileMetrics for files whose
-            # language is supported AND contain at least one function, so a
-            # None result conflates the two cases. Re-detect the language to
-            # tell them apart.
             detected = detect_language(abs_path)
             if detected is not None and detected in _CCX_LANG_CONFIG:
                 files_excluded_no_functions += 1
@@ -454,14 +463,19 @@ def hotspots_kernel(
             files_excluded_no_functions += 1
             continue
 
-        dates = churn_by_file.get(repo_rel, [])
-        change_freq = len(dates)
-        if change_freq < min_commits:
+        acc = churn_by_file.get(repo_rel)
+        if acc is None or acc.commit_count < min_commits:
             files_excluded_below_min_commits += 1
             continue
 
-        score = float(fm.sum_ccx * change_freq)
-        sorted_dates = sorted(dates)
+        loc_delta = acc.insertions - acc.deletions
+        # Files that shrank (net negative LOC) are not hotspots in the
+        # growth-detection sense. Clamp to 0 for scoring; preserve raw
+        # delta for display.
+        loc_delta_clamped = max(0, loc_delta)
+        score = float(fm.sum_ccx * loc_delta_clamped)
+
+        sorted_dates = sorted(acc.dates)
         first_seen = sorted_dates[0][:10]
         last_seen = sorted_dates[-1][:10]
 
@@ -472,7 +486,10 @@ def hotspots_kernel(
                 language=fm.language,
                 sum_ccx=fm.sum_ccx,
                 max_ccx=fm.max_ccx,
-                change_freq=change_freq,
+                loc_delta=loc_delta,
+                loc_insertions=acc.insertions,
+                loc_deletions=acc.deletions,
+                commit_count=acc.commit_count,
                 first_seen=first_seen,
                 last_seen=last_seen,
                 hotspot_score=score,
@@ -484,7 +501,7 @@ def hotspots_kernel(
 
     # --- Step 6: Sort + normalize scores ---
     hotspots.sort(
-        key=lambda h: (-h.hotspot_score, -h.sum_ccx, -h.change_freq, h.file)
+        key=lambda h: (-h.hotspot_score, -h.sum_ccx, -h.loc_delta, h.file)
     )
 
     max_score = hotspots[0].hotspot_score if hotspots else 0.0
@@ -495,8 +512,6 @@ def hotspots_kernel(
     # --- Step 7: Quadrant classification (+ interpretation) ---
     quadrant_counts = _assign_quadrants(hotspots, hotspot_percentile)
 
-    # Record pre-truncation count for the summary (user cares about "how many
-    # files survived the filters", not the post-cap slice length).
     files_analyzed = len(hotspots)
 
     # --- Step 8: Truncation (post-classification) ---

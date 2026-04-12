@@ -11,9 +11,13 @@ import pytest
 from aux.util.git import (
     CommitRecord,
     GitLogResult,
+    NumstatCommitRecord,
+    GitNumstatResult,
     _parse_log_output,
+    _parse_numstat_log_output,
     _reject_flag_like,
     git_log_file_changes,
+    git_log_numstat,
 )
 
 
@@ -351,3 +355,113 @@ def test_parse_skips_malformed_header():
     output = "\x1eonly_one_field\nfile_a.py\n"
     records = _parse_log_output(output)
     assert records == []
+
+
+# ---------------------------------------------------------------------------
+# 6. Numstat parser unit tests (no subprocess)
+# ---------------------------------------------------------------------------
+
+
+def test_parse_numstat_empty_output():
+    assert _parse_numstat_log_output("") == []
+
+
+def test_parse_numstat_single_commit():
+    output = "\x1eabc123\x1f2026-03-01T00:00:00+00:00\x1f\n3\t1\tfile.py\n"
+    records = _parse_numstat_log_output(output)
+    assert len(records) == 1
+    assert records[0].commit_hash == "abc123"
+    assert len(records[0].files) == 1
+    assert records[0].files[0].file == "file.py"
+    assert records[0].files[0].insertions == 3
+    assert records[0].files[0].deletions == 1
+
+
+def test_parse_numstat_two_commits():
+    output = (
+        "\x1ea1\x1f2026-03-01T00:00:00+00:00\x1fp1\n5\t2\tfile_a.py\n10\t0\tfile_b.py\n"
+        "\x1ea2\x1f2026-03-02T00:00:00+00:00\x1fp2 p3\n1\t1\tfile_c.py\n"
+    )
+    records = _parse_numstat_log_output(output)
+    assert len(records) == 2
+    assert len(records[0].files) == 2
+    assert records[0].files[0].insertions == 5
+    assert records[0].files[0].deletions == 2
+    assert records[0].files[1].insertions == 10
+    assert records[0].files[1].deletions == 0
+    assert len(records[1].files) == 1
+
+
+def test_parse_numstat_binary_file():
+    output = "\x1eabc\x1f2026-03-01T00:00:00+00:00\x1f\n-\t-\timage.png\n"
+    records = _parse_numstat_log_output(output)
+    assert len(records) == 1
+    assert records[0].files[0].file == "image.png"
+    assert records[0].files[0].insertions == 0
+    assert records[0].files[0].deletions == 0
+
+
+def test_parse_numstat_malformed_skipped():
+    output = "\x1eonly_one_field\n3\t1\tfile.py\n"
+    records = _parse_numstat_log_output(output)
+    assert records == []
+
+
+# ---------------------------------------------------------------------------
+# 7. Numstat integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_numstat_single_commit(tmp_path: Path):
+    repo = _init_repo(tmp_path / "repo")
+    _commit(repo, {"a.py": "line1\nline2\nline3\n"}, "add a", "2026-03-01T00:00:00+00:00")
+    result = git_log_numstat(repo)
+    assert result.ok is True
+    assert len(result.commits) == 1
+    c = result.commits[0]
+    assert len(c.files) == 1
+    assert c.files[0].file == "a.py"
+    assert c.files[0].insertions == 3
+    assert c.files[0].deletions == 0
+
+
+def test_numstat_multiple_commits(tmp_path: Path):
+    repo = _init_repo(tmp_path / "repo")
+    _commit(repo, {"a.py": "line1\n"}, "c1", "2026-03-01T00:00:00+00:00")
+    _commit(repo, {"a.py": "line1\nline2\nline3\n"}, "c2", "2026-03-02T00:00:00+00:00")
+    result = git_log_numstat(repo)
+    assert result.ok is True
+    assert len(result.commits) == 2
+    # Newest first: c2 added 2 lines, deleted 0
+    c2 = result.commits[0]
+    assert c2.files[0].file == "a.py"
+    assert c2.files[0].insertions == 2
+    assert c2.files[0].deletions == 0
+    # c1 added 1 line
+    c1 = result.commits[1]
+    assert c1.files[0].insertions == 1
+
+
+def test_numstat_since_filter(tmp_path: Path):
+    repo = _init_repo(tmp_path / "repo")
+    _commit(repo, {"old.py": "1\n"}, "old", "2020-01-01T00:00:00+00:00")
+    _commit(repo, {"new.py": "1\n"}, "new", "2026-03-01T00:00:00+00:00")
+    result = git_log_numstat(repo, since="2025-01-01")
+    assert result.ok is True
+    files = [f.file for c in result.commits for f in c.files]
+    assert "new.py" in files
+    assert "old.py" not in files
+
+
+def test_numstat_not_a_repo(tmp_path: Path):
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    result = git_log_numstat(plain)
+    assert result.ok is False
+    assert any("not a git repository" in e for e in result.errors)
+
+
+def test_numstat_flag_injection_rejected(tmp_path: Path):
+    repo = _init_repo(tmp_path / "repo")
+    with pytest.raises(ValueError, match="since"):
+        git_log_numstat(repo, since="--upload-pack=/tmp/evil")
