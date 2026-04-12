@@ -53,9 +53,9 @@ Usage:
 def cmd_capabilities(args: argparse.Namespace) -> int:
     """Execute capabilities command."""
     from aux import __version__
-    from aux.commands import ccx, ck, curl, delta, deps, files, find, hotspots, prune, rename, replace, robert, search, usages
+    from aux.commands import ccx, ck, curl, delta, deps, files, find, halstead, hotspots, npath, prune, rename, replace, robert, search, usages
 
-    modules = [files, search, find, replace, rename, curl, usages, prune, deps, delta, robert, ccx, ck, hotspots]
+    modules = [files, search, find, replace, rename, curl, usages, prune, deps, delta, robert, ccx, ck, hotspots, halstead, npath]
     registry = [m.CAPABILITY for m in modules if hasattr(m, "CAPABILITY")]
 
     if args.format == "names":

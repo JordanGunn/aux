@@ -8,7 +8,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from aux import __version__
-from aux.commands import capabilities, ccx, ck, curl, delta, deps, files, find, hotspots, prune, rename, replace, robert, search, usages
+from aux.commands import capabilities, ccx, ck, curl, delta, deps, files, find, halstead, hotspots, npath, prune, rename, replace, robert, search, usages
 from aux.util.doctor import run_doctor
 
 if TYPE_CHECKING:
@@ -33,6 +33,8 @@ Commands:
   ccx           Cyclomatic + Cognitive Complexity per function (McCabe + Campbell)
   ck            Chidamber & Kemerer class metrics (CBO, DIT, NOC, WMC)
   hotspots      Churn-weighted complexity hotspots per file (Tornhill-style)
+  halstead      Halstead Software Science metrics per function (Volume, Difficulty)
+  npath         NPATH acyclic execution path count per function (Nejmeh 1988)
   replace       Replace a string everywhere in a codebase (dry-run + apply)
   rename        Move/rename files or directories (dry-run + apply)
   curl          Agent-optimised HTTP fetch with progressive disclosure
@@ -77,6 +79,8 @@ Environment:
     ccx.register_parser(subparsers)
     ck.register_parser(subparsers)
     hotspots.register_parser(subparsers)
+    halstead.register_parser(subparsers)
+    npath.register_parser(subparsers)
     capabilities.register_parser(subparsers)
 
     # Doctor command

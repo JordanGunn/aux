@@ -15,7 +15,9 @@ from aux.plans.schemas import (
     DepsPlan,
     FilesPlan,
     FindPlan,
+    HalsteadPlan,
     HotspotsPlan,
+    NpathPlan,
     PrunePlan,
     RenamePlan,
     ReplacePlan,
@@ -41,6 +43,8 @@ PLAN_TYPES: dict[str, type[BaseModel]] = {
     "ccx": CcxPlan,
     "ck": CkPlan,
     "hotspots": HotspotsPlan,
+    "halstead": HalsteadPlan,
+    "npath": NpathPlan,
 }
 
 

@@ -61,7 +61,7 @@ def test_capabilities_has_skills_list():
 def test_capabilities_has_exactly_14_skills():
     _, output = _run(["capabilities"])
     data = json.loads(output)
-    assert len(data["skills"]) == 14, f"Expected 14 skills, got {len(data['skills'])}"
+    assert len(data["skills"]) == 16, f"Expected 16 skills, got {len(data['skills'])}"
 
 
 def test_capabilities_has_composition_note():
@@ -139,7 +139,8 @@ def test_read_analysis_network_skills_do_not_mutate():
 
 EXPECTED_SKILL_NAMES = {
     "files", "search", "find", "replace", "rename",
-    "curl", "usages", "prune", "deps", "delta", "robert", "ccx", "ck", "hotspots",
+    "curl", "usages", "prune", "deps", "delta", "robert",
+    "ccx", "ck", "hotspots", "halstead", "npath",
 }
 
 

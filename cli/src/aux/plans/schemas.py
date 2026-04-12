@@ -383,13 +383,13 @@ class HotspotsPlan(BaseModel):
     hidden: bool = Field(default=False, description="Include hidden files")
     no_ignore: bool = Field(default=False, description="Don't respect gitignore")
     since: str | None = Field(
-        default="90 days ago",
+        default="14 days ago",
         description=(
-            "Git log window start (git-style: '90 days ago', '2025-01-01', "
-            "'all'/'unbounded' for full history). Default is 90d — tighter than "
-            "Tornhill's canonical 1yr to match the steeper curve of agentic "
-            "smell accumulation. Unbounded windows can be a perf footgun on "
-            "large repos."
+            "Git log window start (git-style: '14 days ago', '2025-01-01', "
+            "'all'/'unbounded' for full history). Default is 14d — tuned for "
+            "agentic code generation where architectural damage from file "
+            "growth accumulates in days, not months. Widen to '90 days ago' "
+            "or 'all' for human-pace repos."
         ),
     )
     until: str | None = Field(default=None, description="Git log window end")
@@ -404,6 +404,52 @@ class HotspotsPlan(BaseModel):
         ge=0.5,
         le=0.99,
         description="Percentile cutoff for hotspot quadrant classification",
+    )
+
+
+class HalsteadPlan(BaseModel):
+    """Plan schema for halstead command (Halstead Software Science metrics)."""
+
+    root: str = Field(..., description="Search root directory")
+    languages: list[str] = Field(
+        default_factory=list,
+        description="Subset of supported languages to analyze (empty = all supported)",
+    )
+    globs: list[str] = Field(
+        default_factory=list,
+        description="Override include globs (otherwise derived from languages)",
+    )
+    excludes: list[str] = Field(default_factory=list, description="Exclude globs")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    max_results: int | None = Field(
+        default=None, ge=1, description="Cap on functions in output (post-sort)"
+    )
+    min_volume: float = Field(
+        default=0, ge=0, description="Filter — only return functions with volume >= this value"
+    )
+
+
+class NpathPlan(BaseModel):
+    """Plan schema for npath command (NPATH acyclic execution path count)."""
+
+    root: str = Field(..., description="Search root directory")
+    languages: list[str] = Field(
+        default_factory=list,
+        description="Subset of supported languages to analyze (empty = all supported)",
+    )
+    globs: list[str] = Field(
+        default_factory=list,
+        description="Override include globs (otherwise derived from languages)",
+    )
+    excludes: list[str] = Field(default_factory=list, description="Exclude globs")
+    hidden: bool = Field(default=False, description="Include hidden files")
+    no_ignore: bool = Field(default=False, description="Don't respect gitignore")
+    max_results: int | None = Field(
+        default=None, ge=1, description="Cap on functions in output (post-sort)"
+    )
+    min_npath: int = Field(
+        default=1, ge=1, description="Filter — only return functions with npath >= this value"
     )
 
 
