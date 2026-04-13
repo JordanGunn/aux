@@ -1,14 +1,14 @@
 ---
 name: hotspots
-license: MIT
+license: Apache-2.0
 description: >
-  Churn-weighted complexity hotspots per file (Tornhill "Your Code as a Crime
-  Scene", 2015). Composes `ccx` (complexity) with `git log` (change
-  frequency) and ranks files by hotspot score = sum_ccx × change_freq. Files
-  are classified into four quadrants — hotspot, stable_complex,
+  Growth-weighted complexity hotspots per file (Tornhill "Your Code as a Crime
+  Scene", 2015). Composes `ccx` (complexity) with `git log --numstat` (LOC
+  change volume) and ranks files by hotspot score = sum_ccx × max(0, loc_delta).
+  Files are classified into four quadrants — hotspot, stable_complex,
   churning_simple, calm — based on 75th-percentile cutoffs on both axes.
-  Default time window is 90 days (tighter than Tornhill's canonical 1 year)
-  because agentic code rot accumulates on a steeper curve than human rot.
+  Default time window is 14 days — tuned for agentic code generation where
+  architectural damage from file growth accumulates in days, not months.
   Read-only. Requires git. Language coverage inherits from ccx.
 metadata:
   author: Jordan Godau

@@ -27,7 +27,7 @@ Options:
   --exclude <pattern>          Exclude glob (repeatable)
   --hidden                     Include hidden files
   --no-ignore                  Don't respect gitignore
-  --since <spec>               Git log window start (default: "90 days ago")
+  --since <spec>               Git log window start (default: "14 days ago")
                                Git-style: "30 days ago", "2025-01-01", "all"
   --until <spec>               Git log window end (default: now)
   --min-commits <n>            Minimum commit count to include a file (default: 2)

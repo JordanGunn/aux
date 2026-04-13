@@ -25,16 +25,16 @@ cd cli && python -m pytest tests/path/to/test_file.py
 cd cli && ruff check src/
 
 # Get schema for any skill (source of truth)
-aux grep --schema
+aux search --schema
 aux find --schema
-aux diff --schema
-aux ls --schema
+aux ccx --schema
+aux hotspots --schema
 
 # Validate a skill is runnable
-./skills/grep/scripts/skill.sh validate
+./skills/search/scripts/skill.sh validate
 
 # Emit all reference docs for a skill (agent onboarding)
-./skills/grep/scripts/skill.sh init
+./skills/search/scripts/skill.sh init
 ```
 
 ## Architecture
@@ -54,8 +54,8 @@ output/               → format_output(), TTY detection, truncation
 ```
 
 **Two invocation modes for every command:**
-- Simple: `aux grep "pattern" --root /path --glob "*.py"`
-- Plan: `aux grep --plan '<json>'` — accepts a full plan JSON matching the Pydantic schema
+- Simple: `aux search "pattern" --root /path --glob "*.py"`
+- Plan: `aux search --plan '<json>'` — accepts a full plan JSON matching the Pydantic schema
 
 `--schema` flag on any command prints the JSON schema for that skill's plan.
 

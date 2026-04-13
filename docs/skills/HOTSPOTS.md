@@ -1,21 +1,25 @@
-# hotspots — Churn-Weighted Complexity Hotspots
+# hotspots — Growth-Weighted Complexity Hotspots
 
-**Version:** 0.1.0 | **Type:** Read-only | **Tier:** Analysis
+**Version:** 0.2.0 | **Type:** Read-only | **Tier:** Analysis
 
 ## What it does
 
-`aux hotspots` ranks files in a codebase by **churn-weighted complexity
-score** — Tornhill's hotspot formula from *Your Code as a Crime Scene*
-(2015):
+`aux hotspots` ranks files in a codebase by **growth-weighted complexity
+score** — Tornhill's hotspot framework from *Your Code as a Crime Scene*
+(2015) with an adapted churn proxy for agentic code generation:
 
 ```
-hotspot_score = sum_ccx × change_freq
+hotspot_score = sum_ccx × max(0, loc_delta)
 ```
 
-A file scores high when it's *both* complex (hard to change safely) *and*
-frequently changed (being modified anyway). That intersection is where
-bugs accumulate, because every change has to navigate the existing
-complexity and every complexity increment compounds across future changes.
+Where `loc_delta` is the net lines of code change (insertions − deletions)
+over the time window, measured via `git log --numstat`. A file scores high
+when it's *both* complex (hard to change safely) *and* growing fast
+(absorbing new code). That intersection is where architectural damage
+accumulates — every new line has to navigate the existing complexity.
+
+Files that shrank (negative `loc_delta`) are clamped to score 0 — shrinkage
+is the opposite of the growth failure mode this metric targets.
 
 `hotspots` is a **composition** skill: it calls `aux ccx` for the
 complexity axis and the shared `util/git.py` primitive for the history
@@ -26,27 +30,38 @@ cutoffs on both axes.
 Where `ccx` surfaces the single worst *functions* and `robert` surfaces
 the worst *packages*, `hotspots` answers a different question: which
 *files* are **actively burning**. A function with CCX=30 untouched for
-three years is a different problem from a function with CCX=15 touched
-twelve times in the last month.
+three years is a different problem from a file that absorbed 200 lines of
+helpers this week.
 
-### Why 90 days (not Tornhill's 1 year)?
+### Why 14 days (not Tornhill's 1 year)?
 
 Tornhill's canonical default is 1 year because his book is calibrated for
 human release cycles. **The AUx user is catching agentic rot**, which
-accumulates on a steeper curve than human-era churn. A 1-year window on
-an agent-assisted repo surfaces a year's worth of human churn and drowns
-the recent agentic signal in noise. `hotspots` defaults to 90 days for
-this reason. Override via `--since` when you need Tornhill-style
-long-horizon analysis.
+accumulates in days, not months. An agent can dump 200 lines of private
+helper functions into an existing file in a single session — the
+architectural damage (namespace contamination, coupling growth, ownership
+erosion) is immediate. A 1-year window on an agent-assisted repo drowns
+the recent signal in human-era noise. `hotspots` defaults to 14 days for
+this reason. Widen to `"90 days ago"` for human-pace repos, or `"all"` for
+Tornhill-style long-horizon analysis.
+
+### Why LOC delta (not commit count)?
+
+Tornhill used commit count as the churn proxy because in 2015 most commits
+were human-authored and roughly similar in scope. With agentic code
+generation, one commit can add 400 lines to a file while 40 trivial commits
+touch one line each. Commit count no longer correlates with actual change
+volume. LOC delta (via `git log --numstat`) directly measures the volume
+of change, which is the signal that matters.
 
 ## Quick start
 
 ```bash
-# Default 90-day window
+# Default 14-day window
 aux hotspots --root ./
 
-# Tighter 30-day window — agent-sprint audit
-aux hotspots --root ./ --since "30 days ago"
+# Wider 90-day window — human-pace repos
+aux hotspots --root ./ --since "90 days ago"
 
 # Unbounded walk — full history analysis
 aux hotspots --root ./ --since all
@@ -58,7 +73,7 @@ aux hotspots --root ./ --min-commits 5
 aux hotspots --root ./ --max-results 10
 
 # Plan mode
-aux hotspots --plan '{"root":"./","since":"60 days ago","min_commits":3}'
+aux hotspots --plan '{"root":"./","since":"30 days ago","min_commits":3}'
 
 # Schema
 aux hotspots --schema
@@ -73,7 +88,7 @@ aux hotspots --schema
 | `--exclude` | pattern | — | Exclude glob (repeatable) |
 | `--hidden` | flag | false | Include hidden files |
 | `--no-ignore` | flag | false | Don't respect gitignore |
-| `--since` | git-spec | `"90 days ago"` | Git log window start. Accepts any git-style time spec (`"30 days ago"`, `"2025-01-01"`, `"1 year ago"`) or the sentinels `"all"`/`"unbounded"` for unbounded walks |
+| `--since` | git-spec | `"14 days ago"` | Git log window start. Accepts any git-style time spec (`"90 days ago"`, `"2025-01-01"`, `"1 year ago"`) or the sentinels `"all"`/`"unbounded"` for unbounded walks |
 | `--until` | git-spec | — | Git log window end (default: now) |
 | `--min-commits` | int | 2 | Minimum commit count to include a file in the ranking |
 | `--max-results` | int | unlimited | Cap on the ranked file list (post-sort) |
@@ -86,11 +101,11 @@ aux hotspots --schema
 ```json
 {
   "summary": {
-    "window_since": "90 days ago",
+    "window_since": "14 days ago",
     "window_until": "",
-    "window_resolved_start": "2026-01-15",
-    "window_resolved_end": "2026-04-08",
-    "total_commits_analyzed": 87,
+    "window_resolved_start": "2026-04-01",
+    "window_resolved_end": "2026-04-13",
+    "total_commits_analyzed": 42,
     "files_analyzed": 142,
     "files_with_complexity": 168,
     "files_excluded": {
@@ -108,9 +123,9 @@ aux hotspots --schema
       "insufficient_data": 0
     },
     "guidance": [
-      "src/router.py (Hotspot): CCX=142, churn=14, score=1988",
-      "src/processor.py (Hotspot): CCX=98, churn=12, score=1176",
-      "src/auth/session.py (Stable Complex): CCX=203, churn=2, score=406"
+      "src/router.py (Hotspot): CCX=142, growth=+320 LOC, score=45440",
+      "src/processor.py (Hotspot): CCX=98, growth=+180 LOC, score=17640",
+      "src/auth/session.py (Stable Complex): CCX=203, growth=+12 LOC, score=2436"
     ]
   },
   "files": [
@@ -120,13 +135,16 @@ aux hotspots --schema
       "language": "python",
       "sum_ccx": 142,
       "max_ccx": 42,
-      "change_freq": 14,
-      "first_seen": "2026-02-05",
-      "last_seen": "2026-04-07",
-      "hotspot_score": 1988.0,
+      "loc_delta": 320,
+      "loc_insertions": 350,
+      "loc_deletions": 30,
+      "commit_count": 14,
+      "first_seen": "2026-04-02",
+      "last_seen": "2026-04-12",
+      "hotspot_score": 45440.0,
       "hotspot_score_normalized": 100.0,
       "quadrant": "hotspot",
-      "interpretation": "Active hotspot: CCX=142, churn=14 commits (last touched 2026-04-07). Complex AND frequently changed — prime refactor target."
+      "interpretation": "Active hotspot: CCX=142, growth=+320 LOC across 14 commits (last touched 2026-04-12). Complex AND growing fast — prime refactor target."
     }
   ],
   "errors": []
@@ -138,23 +156,22 @@ aux hotspots --schema
 | Axis | Source | Per-file value | Interpretation |
 |------|--------|----------------|----------------|
 | Complexity | `ccx_kernel` | `sum_ccx` — sum of cyclomatic complexity across every function in the file | How expensive it is to safely modify this file |
-| Churn | `git log --name-only --no-merges` | `change_freq` — count of commits in the window that touched the file | How actively this file is being changed |
-| Score | computed | `sum_ccx × change_freq` | Combined refactor-priority signal |
+| Growth | `git log --numstat` | `loc_delta` — net lines of code change (insertions − deletions) in the window | How much new code this file absorbed recently |
+| Score | computed | `sum_ccx × max(0, loc_delta)` | Combined refactor-priority signal |
 
-The raw product is intentional. It penalises equally the two failure
-modes: a very complex file that is changing slowly, and a simple file
-that is changing rapidly. A file with `sum_ccx=100, change_freq=1` has the
-same raw score as a file with `sum_ccx=1, change_freq=100`, but they land
+The raw product penalises the agentic failure mode directly: a complex
+file that is growing fast. A file with `sum_ccx=100, loc_delta=1` has the
+same raw score as a file with `sum_ccx=1, loc_delta=100`, but they land
 in different quadrants (`stable_complex` vs `churning_simple`) — the
 quadrant is the real interpretation.
 
 ## Quadrant reference
 
-| Quadrant | sum_ccx | change_freq | Meaning |
-|----------|---------|-------------|---------|
-| `hotspot` | ≥ p75 | ≥ p75 | **Active hotspot**: complex AND frequently changed. Prime refactor target. |
-| `stable_complex` | ≥ p75 | < p75 | **Legacy**: complex but dormant. Touch with care but not urgent. |
-| `churning_simple` | < p75 | ≥ p75 | **Hot path**: frequently changed but straightforward. Safe for now; watch for accidental complexity growth. |
+| Quadrant | sum_ccx | loc_delta | Meaning |
+|----------|---------|-----------|---------|
+| `hotspot` | ≥ p75 | ≥ p75 | **Active hotspot**: complex AND growing fast. Prime refactor target. |
+| `stable_complex` | ≥ p75 | < p75 | **Legacy**: complex but not growing. Touch with care but not urgent. |
+| `churning_simple` | < p75 | ≥ p75 | **Fast-growing**: absorbing code but straightforward. Watch for accidental complexity growth. |
 | `calm` | < p75 | < p75 | Low signal. |
 | `insufficient_data` | n/a | n/a | Set too small (< 8 files) for percentile classification. |
 
@@ -206,6 +223,7 @@ Inherited from `aux ccx`:
 | Go | `.go` |
 | Rust | `.rs` |
 | Java | `.java` |
+| C# | `.cs` |
 
 Files in other languages are excluded from the ranking and counted in
 `files_excluded_unsupported_language`.
@@ -246,7 +264,7 @@ aux hotspots --root ./       # expect the file to drop a quadrant
   split between the old and new paths, producing artificially low change
   counts for both. Documented limitation.
 
-- **No ownership/author axis.** The skill is purely complexity × churn.
+- **No ownership/author axis.** The skill is purely complexity × growth.
   Tornhill's book also discusses ownership churn (how many different
   authors touched a file) as a third signal. That's a future extension.
 
@@ -259,7 +277,3 @@ aux hotspots --root ./       # expect the file to drop a quadrant
   quadrant reference above. A tiny or uniformly healthy codebase will
   still have "hotspots" in the statistical sense. Use the raw scores for
   absolute judgments.
-
-- **Raw-product scoring only.** Alternatives (log-scaled, weighted sum,
-  recency-weighted churn) are deferred to a follow-up version once
-  real-world signal quality is assessed.

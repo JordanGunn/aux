@@ -46,13 +46,14 @@ echo '{"root":"./","since":"all"}' | ./skills/hotspots/scripts/skill.sh run --st
 
 1. **Normalize `since`** — the sentinels `""`, `"all"`, and `"unbounded"`
    are converted to `None` (unbounded log walk)
-2. **`git_log_file_changes(root, since=..., until=...)`**:
+2. **`git_log_numstat(root, since=..., until=...)`**:
    a. Resolve repo root via `git rev-parse --show-toplevel`
    b. Detect shallow clone via `git rev-parse --is-shallow-repository`
       (warn only; does not fail)
-   c. Run `git log --no-merges --name-only --pretty=format:...` with the
+   c. Run `git log --no-merges --numstat --pretty=format:...` with the
       window filters
-   d. Parse the output into `CommitRecord[]`
+   d. Parse the output into `NumstatCommitRecord[]` with per-file
+      insertions/deletions
 3. **Scope commits** to the subdirectory (if `root` is not the repo
    root) — filter each commit's `files_changed` tuple to paths under the
    subdirectory prefix
@@ -67,9 +68,9 @@ echo '{"root":"./","since":"all"}' | ./skills/hotspots/scripts/skill.sh run --st
      functions) → classify via `detect_language`, add to the appropriate
      exclusion count
    - If `sum_ccx == 0` → `files_excluded_no_functions += 1`
-   - If `change_freq < min_commits` → `files_excluded_below_min_commits += 1`
+   - If `loc_delta < min_commits` → `files_excluded_below_min_commits += 1`
    - Otherwise → build a `FileHotspot` entry
-7. **Sort** by `(-hotspot_score, -sum_ccx, -change_freq, file)` for stable
+7. **Sort** by `(-hotspot_score, -sum_ccx, -loc_delta, file)` for stable
    ordering
 8. **Normalize scores** — divide by max to produce
    `hotspot_score_normalized ∈ [0, 100]`
@@ -86,19 +87,19 @@ echo '{"root":"./","since":"all"}' | ./skills/hotspots/scripts/skill.sh run --st
 | Axis | Source | Per-file value | Interpretation |
 |------|--------|----------------|----------------|
 | Complexity | `ccx_kernel` | `sum_ccx` (total cyclomatic complexity across all functions in the file) | How expensive it is to safely modify this file |
-| Churn | `git log --name-only` | `change_freq` (count of non-merge commits in the window that touched the file) | How actively this file is being changed |
-| Score | computed | `hotspot_score = sum_ccx × change_freq` | Combined refactor-priority signal |
+| Growth | `git log --numstat` | `loc_delta` (net lines of code change: insertions − deletions) | How much new code this file absorbed recently |
+| Score | computed | `hotspot_score = sum_ccx × max(0, loc_delta)` | Combined refactor-priority signal |
 
 The raw product is intentional. It penalises equally the two failure
-modes: a very complex file that is changing slowly, and a simple file
-that is changing rapidly. A file with `sum_ccx=100, change_freq=1` has the
-same raw score as a file with `sum_ccx=1, change_freq=100`, but they land
+modes: a very complex file that is growing fast, and a simple file
+that is absorbing large amounts of code. A file with `sum_ccx=100, loc_delta=1` has the
+same raw score as a file with `sum_ccx=1, loc_delta=100`, but they land
 in different quadrants (`stable_complex` vs `churning_simple`) — the
 quadrant is the real interpretation.
 
 ## Quadrant reference
 
-| Quadrant | sum_ccx | change_freq | Meaning |
+| Quadrant | sum_ccx | loc_delta | Meaning |
 |----------|---------|-------------|---------|
 | `hotspot` | ≥ p75 | ≥ p75 | Active hotspot — complex AND frequently changed. Prime refactor target. |
 | `stable_complex` | ≥ p75 | < p75 | Legacy — touch with care but not urgent. |
@@ -132,10 +133,10 @@ The cutoff `p75` is computed **inclusively** — a file whose value is
   - `file` / `path` — repo-root-relative and absolute file locations
   - `language` — detected from file extension
   - `sum_ccx` / `max_ccx` — file-level complexity totals from `ccx`
-  - `change_freq` — commit count in the window
+  - `loc_delta` — net LOC change (insertions − deletions) in the window
   - `first_seen` / `last_seen` — ISO dates (YYYY-MM-DD) of the first and
     last commit in the window that touched this file
-  - `hotspot_score` — raw `sum_ccx × change_freq`
+  - `hotspot_score` — `sum_ccx × max(0, loc_delta)`
   - `hotspot_score_normalized` — 0–100 scaled by the max score
   - `quadrant` — machine-filterable quadrant label
   - `interpretation` — human-readable verdict keyed to the quadrant
@@ -172,7 +173,7 @@ The cutoff `p75` is computed **inclusively** — a file whose value is
 
 **Quarterly health check:**
 ```
-1. Run aux hotspots --root <project> (default 90-day window)
+1. Run aux hotspots --root <project> --since "90 days ago"
 2. Track hotspot count over time. Rising hotspot count in fixed windows
    is an early signal of architectural decay
 3. If hotspot count grew since last check, inspect which files crossed

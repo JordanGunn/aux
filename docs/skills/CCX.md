@@ -195,13 +195,14 @@ flattened, not split.
 | Go | `.go` |
 | Rust | `.rs` |
 | Java | `.java` |
+| C# | `.cs` |
 
 Files in unsupported languages are skipped silently. Bash files (`.sh`,
 `.bash`) are intentionally excluded — CCX is not meaningful for shell scripts
 where the real complexity lives in piped external commands.
 
 C, C++, and Ruby are not supported in this version (deferred due to parser
-quirks, macro handling, and goto semantics). They will be added in a follow-up.
+quirks, macro handling, and goto semantics).
 
 ## Composing with other skills
 

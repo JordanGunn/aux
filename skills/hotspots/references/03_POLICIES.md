@@ -41,7 +41,7 @@ hotspots MUST:
 - Normalize all path keys to forward-slash repo-root-relative strings
   before joining the ccx and git sides
 - Sort `files[]` output by `hotspot_score` descending, with stable tie
-  breakers on `sum_ccx`, `change_freq`, and file path
+  breakers on `sum_ccx`, `loc_delta`, and file path
 - Include `quadrant` as a machine-readable field on every file entry
 - Include `interpretation` as a human-readable verdict keyed to the
   quadrant on every file entry
@@ -67,12 +67,12 @@ AUx. The rules codified in this version:
   then, direct composition is acceptable.
 
 The scoring formula is intentionally fixed in this version:
-- `hotspot_score = sum_ccx × change_freq` (raw product, no transforms)
+- `hotspot_score = sum_ccx × loc_delta` (raw product, no transforms)
 - Alternatives (log-scaled, normalized, weighted sum, recency-weighted
   churn) are deferred to a follow-up version once real-world signal
   quality is assessed
 
-The time window default is intentionally short (90 days, vs Tornhill's
+The time window default is intentionally short (14 days, vs Tornhill's
 canonical 1 year):
 - Agentic code rot accumulates on a steeper curve than human-era churn
 - A 1-year window on an agent-assisted repo surfaces a year's worth of
@@ -88,7 +88,7 @@ Files excluded from the ranking (surfaced as counts for transparency):
   (`files_excluded_unsupported_language`)
 - Files with `sum_ccx == 0` — no functions in the file
   (`files_excluded_no_functions`)
-- Files with `change_freq < min_commits` — default 2, filters drive-by
+- Files with `loc_delta < min_commits` — default 2, filters drive-by
   single-touch noise (`files_excluded_below_min_commits`)
 - Files present in git log but not on disk at HEAD — deleted or renamed
   without --follow tracking (`files_excluded_not_on_disk`)

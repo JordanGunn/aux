@@ -43,6 +43,20 @@ Hotspot Analysis (aux hotspots)
   Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
   Programs." Pragmatic Bookshelf.
 
+Halstead Software Science Metrics (aux halstead)
+  Halstead, M. (1977). "Elements of Software Science." Elsevier.
+
+  Metrics implemented: Volume (information content), Difficulty (cognitive
+  burden), Effort, Vocabulary, Length. Derived from operator/operand token
+  counts per function via tree-sitter leaf node classification.
+
+NPATH Complexity (aux npath)
+  Nejmeh, B. (1988). "NPATH: A Measure of Execution Path Complexity and
+  Its Applications." Communications of the ACM, 31(2), 188-200.
+
+  Metric implemented: acyclic execution path count per function.
+  Multiplicative — catches combinatorial explosion that CCX underreports.
+
 Dependency Cycle Detection (aux deps)
   Tarjan, R.E. (1972). "Depth-First Search and Linear Graph Algorithms."
   SIAM Journal on Computing, 1(2), 146-160.

@@ -13,7 +13,7 @@ index:
 hotspots is a read-only composition skill that computes **churn-weighted
 complexity scores** per file and classifies files into refactor-priority
 quadrants. The metric is Tornhill's hotspot formula from *Your Code as a
-Crime Scene* (2015): `hotspot_score = complexity × change_frequency`. A
+Crime Scene* (2015): `hotspot_score = complexity × loc_deltauency`. A
 file that is complex AND frequently changed is where bugs accumulate,
 because every change has to navigate the existing complexity and every
 complexity increment compounds across future changes.
@@ -54,8 +54,8 @@ The execution pipeline:
    - Exclude files with `sum_ccx == 0` (no functions)
    - Exclude files in languages unsupported by `ccx`
    - Exclude files below `min_commits` (default 2)
-6. Compute `hotspot_score = sum_ccx × change_freq` per surviving file
-7. Sort by score descending (tie-break: sum_ccx, change_freq, file path)
+6. Compute `hotspot_score = sum_ccx × loc_delta` per surviving file
+7. Sort by score descending (tie-break: sum_ccx, loc_delta, file path)
 8. Compute 75th-percentile cutoffs on both axes and assign quadrants
 9. Build `guidance` for non-calm files in the top 10
 10. Apply `max_results` truncation (post-classification)
@@ -86,7 +86,7 @@ single file, not for whole-log walks. A file renamed mid-window appears
 with its history split (old path + new path), producing artificially
 shallow change counts for both. Documented limitation.
 
-**The default time window is 90 days**, not Tornhill's canonical 1 year.
+**The default time window is 14 days**, not Tornhill's canonical 1 year.
 Agentic code rot accumulates on a steeper curve than human-era churn; a
 1-year window on an agent-assisted repo produces noise. Override via
 `--since`.

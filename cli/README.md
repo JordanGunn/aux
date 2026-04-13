@@ -44,6 +44,12 @@ Full methodology: [`docs/benchmark/`](../docs/benchmark/)
 | `prune` | analysis | Dead code candidate audit (advisory) |
 | `deps` | analysis | Module dependency graph: coupling, cycles, blast radius |
 | `delta` | analysis | Semantic git diff: files changed + symbols added/removed |
+| `robert` | analysis | Robert C. Martin package design metrics (Go, Python) |
+| `ccx` | analysis | Cyclomatic + Cognitive Complexity per function |
+| `ck` | analysis | Chidamber & Kemerer class metrics (CBO, DIT, NOC, WMC) |
+| `hotspots` | analysis | Growth-weighted complexity hotspots per file |
+| `halstead` | analysis | Halstead Software Science metrics (Volume, Difficulty) |
+| `npath` | analysis | NPATH acyclic execution path count per function |
 | `replace` | write | Bulk fixed-string replacement (dry-run by default) |
 | `rename` | write | Move/rename files or directories (dry-run by default) |
 | `curl` | network | Agent-optimised HTTP fetch with progressive disclosure |
