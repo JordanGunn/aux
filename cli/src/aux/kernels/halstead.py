@@ -213,6 +213,35 @@ _LANG_CONFIG: dict[str, _HalsteadLangConfig] = {
             "true", "false", "null",
         }),
     ),
+    "c_sharp": _HalsteadLangConfig(
+        function_nodes=frozenset({
+            "method_declaration", "constructor_declaration",
+            "lambda_expression",
+        }),
+        operator_types=frozenset({
+            "if", "else", "for", "foreach", "while", "do", "return",
+            "class", "struct", "interface", "enum",
+            "using", "namespace", "try", "catch", "finally",
+            "throw", "new", "is", "as", "switch", "in",
+            "case", "default", "break", "continue",
+            "public", "private", "protected", "internal", "static",
+            "readonly", "abstract", "virtual", "override", "sealed",
+            "async", "await", "void", "this", "base", "var",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!", "~", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "++", "--", "?", "=>", "??",
+        }),
+        operand_types=frozenset({
+            "identifier", "type_identifier",
+            "integer_literal", "real_literal",
+            "string_literal", "verbatim_string_literal",
+            "interpolated_string_expression",
+            "character_literal",
+            "true", "false", "null",
+        }),
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -222,6 +251,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "go": ["**/*.go"],
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
+    "c_sharp": ["**/*.cs"],
 }
 
 

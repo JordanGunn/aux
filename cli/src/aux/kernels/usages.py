@@ -39,6 +39,14 @@ DEFINITION_QUERIES: dict[str, list[tuple[str, str]]] = {
         ("(class_declaration name: (identifier) @name)", "class"),
         ("(interface_declaration name: (identifier) @name)", "interface"),
     ],
+    "c_sharp": [
+        ("(method_declaration name: (identifier) @name)", "method"),
+        ("(class_declaration name: (identifier) @name)", "class"),
+        ("(struct_declaration name: (identifier) @name)", "struct"),
+        ("(interface_declaration name: (identifier) @name)", "interface"),
+        ("(constructor_declaration name: (identifier) @name)", "constructor"),
+        ("(property_declaration name: (identifier) @name)", "property"),
+    ],
 }
 
 

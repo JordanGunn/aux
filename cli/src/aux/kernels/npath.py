@@ -67,6 +67,7 @@ class _NpathLangConfig:
     catch_node: str | None          # "except_clause", "catch_clause" etc.
     body_field: str                 # "body", "consequence", etc.
     block_types: frozenset[str]     # block/statement_block types
+    bare_else_keyword: str | None = None  # C#: "else" is a bare keyword, not a wrapper
 
 
 _LANG_CONFIG: dict[str, _NpathLangConfig] = {
@@ -170,6 +171,26 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         body_field="body",
         block_types=frozenset({"block"}),
     ),
+    "c_sharp": _NpathLangConfig(
+        function_nodes=frozenset({
+            "method_declaration", "constructor_declaration",
+            "lambda_expression",
+        }),
+        if_node="if_statement",
+        else_clause="__none__",        # C# has no else_clause wrapper
+        elif_clause=None,
+        loop_nodes=frozenset({
+            "for_statement", "foreach_statement",
+            "while_statement", "do_statement",
+        }),
+        switch_node="switch_statement",
+        case_node="switch_section",
+        try_node="try_statement",
+        catch_node="catch_clause",
+        body_field="body",
+        block_types=frozenset({"block"}),
+        bare_else_keyword="else",
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -179,6 +200,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "go": ["**/*.go"],
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
+    "c_sharp": ["**/*.cs"],
 }
 
 
@@ -341,6 +363,18 @@ def _npath_of_if(node, config: _NpathLangConfig) -> int:
                 elif ec.type == config.if_node:
                     # C-style else-if chain
                     alt_npaths.append(_npath_of_if(ec, config))
+
+    # Bare-keyword else (C#): "else" is a keyword child, body is next sibling
+    if config.bare_else_keyword and not has_terminal:
+        children = list(node.children)
+        for i, child in enumerate(children):
+            if child.type == config.bare_else_keyword and i + 1 < len(children):
+                nxt = children[i + 1]
+                has_terminal = True
+                if nxt.type in config.block_types:
+                    alt_npaths.append(_npath_of_block(nxt, config))
+                elif nxt.type == config.if_node:
+                    alt_npaths.append(_npath_of_if(nxt, config))
 
     if not has_terminal:
         # Implicit fall-through path

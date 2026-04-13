@@ -282,6 +282,33 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         boolean_op_node="binary_expression",
         boolean_op_filter=frozenset({"&&", "||"}),
     ),
+    "c_sharp": _LangConfig(
+        function_nodes=frozenset({
+            "method_declaration", "constructor_declaration",
+            "lambda_expression",
+        }),
+        decision_nodes=frozenset({
+            "if_statement",
+            "for_statement", "foreach_statement",
+            "while_statement", "do_statement",
+            "switch_section",
+            "catch_clause",
+            "conditional_expression",
+        }),
+        nesting_nodes=frozenset({
+            "if_statement",
+            "for_statement", "foreach_statement",
+            "while_statement", "do_statement",
+            "switch_statement",
+            "catch_clause",
+            "conditional_expression",
+        }),
+        compensating_decisions=frozenset({
+            "switch_section",
+        }),
+        boolean_op_node="binary_expression",
+        boolean_op_filter=frozenset({"&&", "||"}),
+    ),
 }
 
 # Glob patterns per language for find_kernel discovery.
@@ -292,6 +319,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "go": ["**/*.go"],
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
+    "c_sharp": ["**/*.cs"],
 }
 
 # Bash files are explicitly excluded — see 03_POLICIES.md.

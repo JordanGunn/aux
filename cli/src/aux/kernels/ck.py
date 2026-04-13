@@ -160,6 +160,17 @@ def _extract_python_superclasses(node, content: bytes) -> list[str]:
     return result
 
 
+def _extract_csharp_superclasses(node, content: bytes) -> list[str]:
+    """C#: base_list contains identifier children (classes + interfaces)."""
+    result: list[str] = []
+    for child in node.children:
+        if child.type == "base_list":
+            for gc in child.children:
+                if gc.type == "identifier":
+                    result.append(_node_text(gc, content))
+    return result
+
+
 def _extract_java_superclasses(node, content: bytes) -> list[str]:
     result: list[str] = []
     # extends (single superclass)
@@ -537,6 +548,17 @@ _LANG_CONFIG: dict[str, _CkLangConfig] = {
         ref_node_types=frozenset({"type_identifier", "identifier"}),
         extract_superclasses=_extract_java_superclasses,
     ),
+    "c_sharp": _CkLangConfig(
+        class_nodes=frozenset({
+            "class_declaration", "struct_declaration",
+            "interface_declaration",
+        }),
+        class_name_field="name",
+        body_field="body",
+        method_nodes=frozenset({"method_declaration", "constructor_declaration"}),
+        ref_node_types=frozenset({"identifier", "type_identifier"}),
+        extract_superclasses=_extract_csharp_superclasses,
+    ),
     "typescript": _CkLangConfig(
         class_nodes=frozenset({"class_declaration", "interface_declaration"}),
         class_name_field="name",
@@ -582,6 +604,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "go": ["**/*.go"],
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
+    "c_sharp": ["**/*.cs"],
 }
 
 

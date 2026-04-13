@@ -26,6 +26,10 @@ IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
     "java": [
         ("(import_declaration (scoped_identifier) @module)", "java_import"),
     ],
+    "c_sharp": [
+        ("(using_directive (identifier) @module)", "csharp_using"),
+        ("(using_directive (qualified_name) @module)", "csharp_using"),
+    ],
 }
 
 # Text-tier per-language regex fallback (applied to raw file content)
@@ -49,6 +53,9 @@ TEXT_IMPORT_REGEXES: dict[str, list[tuple[str, str]]] = {
     ],
     "java": [
         (r"^import\s+([\w.]+);", "java_import"),
+    ],
+    "c_sharp": [
+        (r"^using\s+([\w.]+)\s*;", "csharp_using"),
     ],
 }
 
@@ -439,6 +446,7 @@ def _detect_file_language(fp: Path) -> str | None:
         ".go": "go",
         ".rs": "rust",
         ".java": "java",
+        ".cs": "c_sharp",
     }
     return ext_map.get(ext)
 

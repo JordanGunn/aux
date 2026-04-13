@@ -19,6 +19,7 @@ GRAMMAR_MAP: dict[str, str] = {
     "cpp": "tree_sitter_cpp",
     "ruby": "tree_sitter_ruby",
     "bash": "tree_sitter_bash",
+    "c_sharp": "tree_sitter_c_sharp",
 }
 
 # Extension → language name
@@ -38,6 +39,7 @@ EXT_LANGUAGE_MAP: dict[str, str] = {
     ".rb": "ruby",
     ".sh": "bash",
     ".bash": "bash",
+    ".cs": "c_sharp",
 }
 
 # Cache for loaded Language objects
