@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aux-skills"
-version = "0.2.0"
+version = "0.3.0"
 description = "Agentic Unix Skills CLI - unified command interface for agent-driven codebase exploration"
 readme = "README.md"
 license = "Apache-2.0"
